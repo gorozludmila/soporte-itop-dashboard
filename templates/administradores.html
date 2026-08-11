@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Administradores Locales | Soporte iTop
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/estilos.css') }}"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+</head>
+
+<body>
+
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brandmark">
+            SF
+        </div>
+
+        <div>
+
+            <strong>
+                Soporte Timbó y Firma Digital
+            </strong>
+
+            <small>
+                Unidad de Gestión Digital
+            </small>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <h3>
+            Soporte iTop
+        </h3>
+
+        <nav class="nav">
+
+            <a href="{{ url_for('inicio') }}">
+                Inicio
+            </a>
+
+            <a href="{{ url_for('incidentes') }}">
+                Incidentes
+            </a>
+
+            <a href="{{ url_for('requerimientos') }}">
+                Requerimientos
+            </a>
+
+            <a href="{{ url_for('ministerios') }}">
+                Ministerios y Organismos
+            </a>
+
+            <a
+                class="active"
+                href="{{ url_for('administradores') }}"
+            >
+                Administradores Locales
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+    <main class="content">
+
+        <section class="hero">
+
+            <div>
+
+                <span class="eyebrow">
+                    UGD · iTop
+                </span>
+
+                <h1>
+                    Administradores Locales
+                </h1>
+
+                <p>
+                    Análisis de la demanda generada por Administradores
+                    Locales.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <section class="toolbar">
+
+            <div class="field">
+
+                <label>
+                    Ministerio
+                </label>
+
+                <select id="ministerio">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Organismo
+                </label>
+
+                <select id="organismo">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Administrador
+                </label>
+
+                <select id="administrador">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button
+                class="btn btn-primary"
+                id="btnFiltrar"
+            >
+                Aplicar filtros
+            </button>
+
+        </section>
+
+
+        <section class="kpis">
+
+            <article class="kpi">
+
+                <span>
+                    Administradores
+                </span>
+
+                <strong id="totalAdministradores">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi orange">
+
+                <span>
+                    Incidentes reportados
+                </span>
+
+                <strong id="totalIncidentes">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi purple">
+
+                <span>
+                    Requerimientos reportados
+                </span>
+
+                <strong id="totalRequerimientos">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi green">
+
+                <span>
+                    Total tickets
+                </span>
+
+                <strong id="totalTickets">
+                    0
+                </strong>
+
+            </article>
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+        </section>
+
+
+        <section class="card">
+
+            <h3>
+                Tickets por Administrador Local
+            </h3>
+
+            <div class="chart tall">
+
+                <canvas id="chartAdministradores"></canvas>
+
+            </div>
+
+        </section>
+
+
+        <section class="card">
+
+            <h3>
+                Detalle
+            </h3>
+
+            <table class="table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Administrador
+                        </th>
+
+                        <th>
+                            Ministerio
+                        </th>
+
+                        <th>
+                            Organismo
+                        </th>
+
+                        <th>
+                            Incidentes
+                        </th>
+
+                        <th>
+                            Requerimientos
+                        </th>
+
+                        <th>
+                            Total
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="tablaAdministradores">
+
+                </tbody>
+
+            </table>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script
+    src="{{ url_for('static', filename='js/administradores.js') }}"
+></script>
+
+</body>
+
+</html>

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        Incidentes | Soporte iTop
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/estilos.css') }}"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+</head>
+
+<body>
+
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brandmark">
+            SF
+        </div>
+
+        <div>
+
+            <strong>
+                Soporte Timbó y Firma Digital
+            </strong>
+
+            <small>
+                Unidad de Gestión Digital
+            </small>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <h3>
+            Soporte iTop
+        </h3>
+
+        <nav class="nav">
+
+            <a href="{{ url_for('inicio') }}">
+                Inicio
+            </a>
+
+            <a
+                class="active"
+                href="{{ url_for('incidentes') }}"
+            >
+                Incidentes
+            </a>
+
+            <a href="{{ url_for('requerimientos') }}">
+                Requerimientos
+            </a>
+
+            <a href="{{ url_for('ministerios') }}">
+                Ministerios y Organismos
+            </a>
+
+            <a href="{{ url_for('administradores') }}">
+                Administradores Locales
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+    <main class="content">
+
+        <section class="hero">
+
+            <div>
+
+                <span class="eyebrow">
+                    UGD · iTop
+                </span>
+
+                <h1>
+                    Incidentes
+                </h1>
+
+                <p>
+                    Análisis específico de incidentes registrados
+                    en iTop.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <section class="toolbar">
+
+            <div class="field">
+
+                <label>
+                    Desde
+                </label>
+
+                <input
+                    type="date"
+                    id="desde"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Hasta
+                </label>
+
+                <input
+                    type="date"
+                    id="hasta"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Ministerio
+                </label>
+
+                <select id="ministerio">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Organismo
+                </label>
+
+                <select id="organismo">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+       </span>
+
+                <strong id="incidentesCerrados">
+                    0
+                </strong>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>
+                    Estado
+                </label>
+
+                <select id="estado">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <button
+                class="btn btn-primary"
+                id="btnFiltrar"
+            >
+                Aplicar filtros
+            </button>
+
+        </section>
+
+
+        <section class="kpis">
+
+            <article class="kpi orange">
+
+                <span>
+                    Incidentes totales
+                </span>
+
+                <strong id="incidentesTotal">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi pink">
+
+                <span>
+                    Abiertos
+                </span>
+
+                <strong id="incidentesAbiertos">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi green">
+
+                <span>
+                    Cerrados
+                </span>
+
+                <strong id="incidentesCerrados">
+                    0
+                </strong>
+
+            </article>
+
+        </section>
+
+
+        <section class="grid equal">
+
+            <article class="card">
+
+                <h3>
+                    Incidentes por Ministerio
+                </h3>
+
+                <div class="chart tall">
+
+                    <canvas id="chartMinisterios"></canvas>
+
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <h3>
+                    Incidentes por Estado
+                </h3>
+
+                <div class="chart tall">
+
+                    <canvas id="chartEstados"></canvas>
+
+                </div>
+
+            </article>
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+        </section>
+
+
+        <section class="grid equal">
+
+            <article class="card">
+
+                <h3>
+                    Incidentes por Organismo
+                </h3>
+
+                <div class="chart tall">
+
+                    <canvas id="chartOrganismos"></canvas>
+
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <h3>
+                    Incidentes por Servicio
+                </h3>
+
+                <div class="chart tall">
+
+                    <canvas id="chartServicios"></canvas>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <section class="card">
+
+            <h3>
+                Administradores Locales
+            </h3>
+
+            <div class="subtitle">
+                Cantidad de incidentes reportados por Administrador Local
+            </div>
+
+            <table class="table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Administrador
+                        </th>
+
+                        <th>
+                            Ministerio
+                        </th>
+
+                        <th>
+                            Organismo
+                        </th>
+
+                        <th>
+                            Incidentes
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody id="tablaAdministradores">
+
+                </tbody>
+
+            </table>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script
+    src="{{ url_for('static', filename='js/incidentes.js') }}"
+></script>
+
+</body>
+
+</html>

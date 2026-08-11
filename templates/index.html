@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="es">
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard | Soporte Timbó y Firma Digital</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/estilos.css') }}"
+    >
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+
+<header class="topbar">
+
+    <div class="brand">
+
+        <div class="brandmark">
+            SF
+        </div>
+
+        <div>
+            <strong>Soporte Timbó y Firma Digital</strong>
+            <small>Unidad de Gestión Digital</small>
+        </div>
+
+    </div>
+
+    <a class="back" href="#">
+        ← Panel de accesos
+    </a>
+
+</header>
+
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <h3>Soporte iTop</h3>
+
+        <nav class="nav">
+
+            <a
+                class="active"
+                href="{{ url_for('inicio') }}"
+            >
+                Inicio
+            </a>
+
+            <a href="{{ url_for('incidentes') }}">
+                Incidentes
+            </a>
+
+            <a href="{{ url_for('requerimientos') }}">
+                Requerimientos
+            </a>
+
+            <a href="{{ url_for('ministerios') }}">
+                Ministerios y Organismos
+            </a>
+
+            <a href="{{ url_for('administradores') }}">
+                Administradores Locales
+            </a>
+
+        </nav>
+
+    </aside>
+
+
+    <main class="content">
+
+        <section class="hero">
+
+            <div>
+
+                <span class="eyebrow">
+                    UGD · iTop
+                </span>
+
+                <h1>
+                    Dashboard General
+                </h1>
+
+                <p>
+                    Seguimiento de incidentes y requerimientos registrados
+                    en iTop.
+                </p>
+
+            </div>
+
+            <div class="source">
+
+                <strong>Fuente de datos</strong>
+
+                <p>
+                    Incidentes, requerimientos y administradores locales.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- FILTROS -->
+
+        <section class="toolbar">
+
+            <div class="field">
+
+                <label>Desde</label>
+
+                <input
+                    type="date"
+                    id="desde"
+                >
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Hasta</label>
+
+                <input
+                    type="date"
+                    id="hasta"
+                ><link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Ministerio</label>
+
+                <select id="ministerio">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Organismo</label>
+
+                <select id="organismo">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Tipo</label>
+
+                <select id="tipo">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                    <option value="Incidente">
+                        Incidentes
+                    </option>
+
+                    <option value="Requerimiento">
+                        Requerimientos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Estado</label>
+
+                <select id="estado">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Servicio</label>
+
+                <select id="servicio">
+
+                    <option value="">
+                        Todos
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Persona</label>
+
+                <select id="persona_tipo">
+
+                    <option value="reportado">
+                        Reportado por
+                    </option>
+
+                    <option value="admin">
+                        Administrador Local
+                    </option>
+
+                    <option value="creador">
+                        Creador
+                    </option>
+
+                    <option value="analista">
+                        Analista UGD
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="field">
+
+                <label>Nombre</label>
+
+                <select id="persona">
+
+                    <option value="">
+                        Todas
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="quick">
+
+                <button
+                    type="button"
+                    data-periodo="semana"
+                >
+                    Semana
+                </button>
+
+                <button
+                    type="button"
+                    data-periodo="mes"
+                >
+                    Mes
+                </button>
+
+                <button
+                    type="button"
+                    data-periodo="anio"
+                >
+                    Año
+                </button>
+
+            </div>
+
+
+            <button
+                class="btn btn-primary"
+                id="btnFiltrar"
+                type="button"
+            >
+                Aplicar filtros
+            </button>
+
+
+            <button
+                class="btn btn-light"
+                id="btnLimpiar"
+                type="button"
+            >
+                Limpiar
+            </button>
+
+        </section>
+
+
+        <!-- KPIs -->
+
+        <section class="kpis">
+
+            <article class="kpi">
+
+                <span>Total recibidos</span>
+
+                <strong id="totalTickets">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi orange">
+
+                <span>Incidentes</span>
+
+                <strong id="totalIncidentes">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi purple">
+
+                <span>Requerimientos</span>
+
+                <strong id="totalRequerimientos">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi pink">
+
+                <span>Abiertos</span>
+
+                <strong id="totalAbiertos">
+                    0
+                </strong>
+
+            </article>
+
+
+            <article class="kpi green">
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+                <span>Cerrados / solucionados</span>
+
+                <strong id="totalCerrados">
+                    0
+                </strong>
+
+                <small id="porcentaje">
+                    0% resueltos
+                </small>
+
+            </article>
+
+        </section>
+
+
+        <!-- EVOLUCIÓN -->
+
+        <section class="grid">
+
+            <article class="card">
+
+                <h3>
+                    Evolución temporal
+                </h3>
+
+                <div class="subtitle">
+                    Tickets recibidos vs cerrados / solucionados
+                </div>
+
+                <div class="chart">
+
+                    <canvas id="chartEvolucion"></canvas>
+
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <h3>
+                    Tiempo promedio de resolución
+                </h3>
+
+                <div class="subtitle">
+                    Tickets con fecha de inicio y resolución disponible.
+                </div>
+
+                <div class="kpi green">
+
+                    <span>
+                        Tiempo promedio
+                    </span>
+
+                    <strong id="tiempo">
+                        —
+                    </strong>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <!-- MINISTERIOS / ESTADOS -->
+
+        <section class="grid equal">
+
+            <article class="card">
+
+                <h3>
+                    Tickets por Ministerio
+                </h3>
+
+                <div class="chart tall">
+
+                    <canvas id="chartMinisterios"></canvas>
+
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <h3>
+                    Estados registrados
+                </h3>
+
+                <div class="chart tall">
+
+                    <canvas id="chartEstados"></canvas>
+
+                </div>
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/estilos.css') }}"
+>
+            </article>
+
+        </section>
+
+
+        <!-- SERVICIOS / ORGANISMOS -->
+
+        <section class="grid equal">
+
+            <article class="card">
+
+                <h3>
+                    Servicios más demandados
+                </h3>
+
+                <div class="chart">
+
+                    <canvas id="chartServicios"></canvas>
+
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <h3>
+                    Organismos con más tickets
+                </h3>
+
+                <div class="chart">
+
+                    <canvas id="chartOrganismos"></canvas>
+
+                </div>
+
+            </article>
+
+        </section>
+
+
+        <div
+            id="estadoConexion"
+            class="status"
+        >
+            Preparando dashboard...
+        </div>
+
+    </main>
+
+</div>
+
+
+<script
+    src="{{ url_for('static', filename='js/dashboard.js') }}"
+></script>
+
+</body>
+
+</html>
