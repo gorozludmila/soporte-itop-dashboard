@@ -1,374 +1,70 @@
 <!DOCTYPE html>
 <html lang="es">
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/estilos.css') }}"
->
 <head>
-
     <meta charset="UTF-8">
-
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
-
-    <title>
-        Ministerios y Organismos | Soporte iTop
-    </title>
-
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/estilos.css') }}"
-    >
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ministerios y Organismos | Soporte iTop</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-
 </head>
-
 <body>
 
-
 <header class="topbar">
-
-    <div class="brand">
-
-        <div class="brandmark">
-            SF
-        </div>
-
-        <div>
-
-            <strong>
-                Soporte Timbó y Firma Digital
-            </strong>
-
-            <small>
-                Unidad de Gestión Digital
-            </small>
-
-        </div>
-
-    </div>
-
+    <div class="logo-group"><img src="{{ url_for('static', filename='img/logo-ugd.png') }}" alt="Unidad de Gestión Digital" class="logo-ugd"></div>
+    <div class="logo-group"><img src="{{ url_for('static', filename='img/logo-santafe-timbo.png') }}" alt="Santa Fe - Timbó" class="logo-sf"></div>
 </header>
-
-
 <div class="layout">
-
-    <aside class="sidebar">
-
-        <h3>
-            Soporte iTop
-        </h3>
-
-        <nav class="nav">
-
-            <a href="{{ url_for('inicio') }}">
-                Inicio
-            </a>
-
-            <a href="{{ url_for('incidentes') }}">
-                Incidentes
-            </a>
-
-            <a href="{{ url_for('requerimientos') }}">
-                Requerimientos
-            </a>
-
-            <a
-                class="active"
-                href="{{ url_for('ministerios') }}"
-            >
-                Ministerios y Organismos
-            </a>
-
-            <a href="{{ url_for('administradores') }}">
-                Administradores Locales
-            </a>
-
-        </nav>
-
-    </aside>
-
-
-    <main class="content">
-
-        <section class="hero">
-
-            <div>
-
-                <span class="eyebrow">
-                    UGD · iTop
-                </span>
-
-                <h1>
-                    Ministerios y Organismos
-                </h1>
-
-                <p>
-                    Seleccione un Ministerio para analizar sus organismos,
-                    incidentes, requerimientos y Administradores Locales.
-                </p>
-
-            </div>
-
-        </section>
-
-
-        <section class="card">
-
-            <h3>
-                Volumen de tickets por Ministerio
-            </h3>
-
-            <div class="subtitle">
-                Seleccione una barra para visualizar el detalle.
-            </div>
-
-            <div class="chart tall">
-
-                <canvas id="chartMinisterios"></canvas>
-
-            </div>
-
-        </section>
-
-
-        <section
-            id="detalleMinisterio"
-            class="detalle-section"
-        >
-
-            <h2 id="nombreMinisterio">
-                Seleccione un Ministerio
-            </h2>
-
-
-            <section class="kpis">
-
-                <article class="kpi">
-
-                    <span>
-                        Total tickets
-                    </span>
-
-                    <strong id="ministerioTotal">
-                        0
-                    </strong>
-
-                </article>
-
-
-                <article class="kpi orange">
-
-                    <span>
-                        Incidentes
-                    </span>
-
-                    <strong id="ministerioIncidentes">
-                        0
-                    </strong>
-
-                </article>
-
-
-                <article class="kpi purple">
-
-                    <span>
-                        Requerimientos
-                    </span>
-
-                    <strong id="ministerioRequerimientos">
-                        0
-                    </strong>
-
-                </article>
-
-
-                <article class="kpi pink">
-
-                    <span>
-                        Abiertos
-                    </span>
-
-                    <strong id="ministerioAbiertos">
-                        0
-                    </strong>
-
-                </article>
-
-
-                <article class="kpi green">
-
-                    <span>
-                        Cerrados
-                    </span>
-
-                    <strong id="ministerioCerrados">
-                        0
-                    </strong>
-
-                </article>
-
-            </section>
-
-
-            <section class="grid equal">
-
-                <article class="card">
-
-                    <h3>
-                        Organismos
-                    </h3>
-
-                    <div class="chart tall">
-
-                        <canvas id="chartOrganismos"></canvas>
-
-                    </div>
-
-                </article>
-
-
-                <article class="card">
-
-                    <h3>
-                        Estados
-                    </h3>
-
-                    <div class="chart tall">
-
-                        <canvas id="chartEstados"></canvas>
-
-                    </div>
-
-                </article>
-
-            </section>
-
-
-            <section class="grid equal">
-
-                <article class="card">
-
-                    <h3>
-                        Administradores Locales - Incidentes
-                    </h3>
-
-                    <table class="table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Administrador
-                                </th>
-
-                                <th>
-                                    Incidentes
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody id="tablaAdminsIncidentes">
-
-                        </tbody>
-
-                    </table>
-
-                </article>
-
-
-                <article class="card">
-
-                    <h3>
-                        Administradores Locales - Requerimientos
-                    </h3>
-
-                    <table class="table">
-
-                        <thead>
-
-                            <tr>
-
-                                <th>
-                                    Administrador
-                                </th>
-
-                                <th>
-                                    Requerimientos
-                                </th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody id="tablaAdminsRequerimientos">
-
-                        </tbody>
-
-                    </table>
-
-                </article>
-
-            </section>
-
-
-            <section class="card">
-
-                <h3>
-                    Detalle por Organismo
-                </h3>
-
-                <table class="table">
-
-                    <thead>
-
-                        <tr>
-
-                            <th>
-                                Organismo
-                            </th>
-
-                            <th>
-                                Incidentes
-                            </th>
-
-                            <th>
-                                Requerimientos
-                            </th>
-
-                            <th>
-                                Total
-                            </th>
-
-                        </tr>
-
-                    </thead>
-
-                    <tbody id="tablaOrganismos">
-
-                    </tbody>
-
-                </table>
-
-            </section>
-
-        </section>
-
-    </main>
-
-</div>
-
-
-<script
-    src="{{ url_for('static', filename='js/ministerios.js') }}"
-></script>
+<aside class="sidebar">
+    <h3>Soporte iTop</h3>
+    <nav class="nav">
+        <a class="" href="{{ url_for('inicio') }}">Inicio</a>
+        <a class="" href="{{ url_for('incidentes') }}">Incidentes</a>
+        <a class="" href="{{ url_for('requerimientos') }}">Requerimientos</a>
+        <a class="active" href="{{ url_for('ministerios') }}">Ministerios y Organismos</a>
+        <a class="" href="{{ url_for('administradores') }}">Administradores Locales</a>
+    </nav>
+</aside>
+
+<main class="content">
+<section class="page-header"><div><span class="eyebrow">UGD · iTop</span><h1>Ministerios y Organismos</h1><p>Seleccioná un Ministerio para bajar al detalle de sus organismos y Administradores Locales.</p></div><div id="estadoConexion" class="status-pill"><span class="status-dot"></span>Cargando datos...</div></section>
+
+<section class="toolbar">
+    <div class="field"><label>Desde</label><input type="date" id="desde"></div>
+    <div class="field"><label>Hasta</label><input type="date" id="hasta"></div>
+    <div class="field"><label>Ministerio</label><select id="ministerio"><option value="">Todos</option></select></div>
+    <div class="field"><label>Organismo</label><select id="organismo"><option value="">Todos</option></select></div>
+    <div class="field"><label>Ticket</label><select id="tipo"><option value="">Todos</option><option value="Incidente">Incidentes</option><option value="Requerimiento">Requerimientos</option></select></div>
+    <div class="field"><label>Estado</label><select id="estado"><option value="">Todos</option></select></div>
+    <div class="field"><label>Servicio</label><select id="servicio"><option value="">Todos</option></select></div>
+    <div class="field"><label>Persona</label>
+        <select id="persona_tipo">
+            <option value="reportado">Persona que reporta</option>
+            <option value="admin">Administrador Local</option>
+            <option value="analista">Analista UGD</option>
+            <option value="creador" disabled>Creador (no viene en CSV)</option>
+        </select>
+    </div>
+    <div class="field"><label>Nombre</label><select id="persona"><option value="">Todas</option></select></div>
+    <div class="quick">
+        <button type="button" data-periodo="semana">Semana</button>
+        <button type="button" data-periodo="mes">Mes</button>
+        <button type="button" data-periodo="anio">Año</button>
+    </div>
+    <button class="btn btn-primary" id="btnFiltrar" type="button">Aplicar filtros</button>
+    <button class="btn btn-light" id="btnLimpiar" type="button">Limpiar</button>
+</section>
+
+<section class="card"><h3>Volumen de tickets por Ministerio</h3><p class="subtitle">Hacé clic en una barra para abrir el detalle.</p><div class="chart ministerios-chart"><canvas id="chartMinisterios"></canvas></div></section>
+<section id="detalleMinisterio" class="detalle-section hidden">
+    <div class="detail-heading"><div><span class="eyebrow">Ministerio seleccionado</span><h2 id="nombreMinisterio"></h2></div></div>
+    <section class="kpis kpis-tipo"><article class="kpi"><span>Total tickets</span><strong id="ministerioTotal">0</strong></article><article class="kpi orange"><span>Incidentes</span><strong id="ministerioIncidentes">0</strong></article><article class="kpi purple"><span>Requerimientos</span><strong id="ministerioRequerimientos">0</strong></article><article class="kpi pink"><span>Abiertos</span><strong id="ministerioAbiertos">0</strong></article><article class="kpi green"><span>Cerrados</span><strong id="ministerioCerrados">0</strong></article></section>
+    <section class="card"><h3>Organismos del Ministerio</h3><p class="subtitle">Hacé clic en una fila para ver el detalle del Organismo.</p><div class="table-wrapper"><table class="table clickable-table"><thead><tr><th>Organismo</th><th>Incidentes</th><th>Requerimientos</th><th>Abiertos</th><th>Cerrados</th><th>Resueltos</th><th>Total</th></tr></thead><tbody id="tablaOrganismos"></tbody></table></div></section>
+    <section class="grid equal"><article class="card"><h3>Administradores Locales - Incidentes</h3><div class="table-wrapper"><table class="table"><thead><tr><th>Administrador</th><th>Organismo</th><th>Incidentes</th></tr></thead><tbody id="tablaAdminsIncidentes"></tbody></table></div></article><article class="card"><h3>Administradores Locales - Requerimientos</h3><div class="table-wrapper"><table class="table"><thead><tr><th>Administrador</th><th>Organismo</th><th>Requerimientos</th></tr></thead><tbody id="tablaAdminsRequerimientos"></tbody></table></div></article></section>
+    <section id="detalleOrganismo" class="card hidden"><div class="detail-heading"><div><span class="eyebrow">Organismo seleccionado</span><h2 id="nombreOrganismo"></h2></div></div><section class="kpis kpis-tipo"><article class="kpi"><span>Total</span><strong id="organismoTotal">0</strong></article><article class="kpi orange"><span>Incidentes</span><strong id="organismoIncidentes">0</strong></article><article class="kpi purple"><span>Requerimientos</span><strong id="organismoRequerimientos">0</strong></article><article class="kpi pink"><span>Abiertos</span><strong id="organismoAbiertos">0</strong></article></section><div class="grid equal"><div><h3>Admins - Incidentes</h3><div class="table-wrapper"><table class="table"><thead><tr><th>Administrador</th><th>Incidentes</th></tr></thead><tbody id="orgAdminsInc"></tbody></table></div></div><div><h3>Admins - Requerimientos</h3><div class="table-wrapper"><table class="table"><thead><tr><th>Administrador</th><th>Requerimientos</th></tr></thead><tbody id="orgAdminsReq"></tbody></table></div></div></div></section>
+</section>
+</main></div>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ministerios.js') }}"></script>
 
 </body>
-
 </html>

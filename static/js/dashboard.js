@@ -1,47 +1,387 @@
-async function cargarResumen() {
+async function cargarDashboard() {
+
+    estadoPagina("Cargando datos...");
 
     try {
 
-        const respuesta = await fetch("/api/resumen");
+        const p = parametrosFiltros();
 
-        if (!respuesta.ok) {
-            throw new Error("No se pudo obtener el resumen");
+        p.set(
+            "agrupacion",
+            document.getElementById("agrupacion")?.value || "mes"
+        );
+
+
+        const r = await fetch(
+            "/api/resumen?" + p.toString()
+        );
+
+
+        const j = await r.json();
+
+
+        if (!r.ok || !j.ok) {
+            throw new Error(
+                j.error || "Error cargando dashboard"
+            );
         }
 
-        const datos = await respuesta.json();
 
-        document.getElementById("totalTickets").textContent =
-            datos.total;
+        const d = j.data;
 
-        document.getElementById("totalIncidentes").textContent =
-            datos.incidentes;
 
-        document.getElementById("totalRequerimientos").textContent =
-            datos.requerimientos;
+        // =====================================================
+        // KPIs
+        // =====================================================
 
-        document.getElementById("totalAbiertos").textContent =
-            datos.abiertos;
+        document.getElementById(
+            "totalTickets"
+        ).textContent = d.total;
 
-        document.getElementById("totalCerrados").textContent =
-            datos.cerrados;
 
-        document.getElementById("porcentaje").textContent =
-            datos.porcentaje_resolucion + "% resueltos";
+        document.getElementById(
+            "totalIncidentes"
+        ).textContent = d.incidentes;
 
-        document.getElementById("estadoConexion").textContent =
-            "Datos cargados correctamente";
 
-    } catch (error) {
+        document.getElementById(
+            "totalRequerimientos"
+        ).textContent = d.requerimientos;
 
-        console.error(error);
 
-        document.getElementById("estadoConexion").textContent =
-            "Error al cargar los datos";
+        document.getElementById(
+            "totalAbiertos"
+        ).textContent = d.abiertos;
+
+
+        document.getElementById(
+            "totalCerrados"
+        ).textContent = d.cerrados;
+
+
+        document.getElementById(
+            "totalResueltos"
+        ).textContent = d.resueltos;
+
+
+        document.getElementById(
+            "porcentaje"
+        ).textContent =
+            d.porcentaje_resolucion + "%";
+
+
+        document.getElementById(
+            "tiempo"
+        ).textContent =
+            formatearHoras(
+                d.tiempo_promedio_horas
+            );
+
+
+        // =====================================================
+        // GRÁFICOS
+        // =====================================================
+
+        dibujarEvolucion(
+            d.evolucion
+        );
+
+
+        crearGraficoHorizontal(
+            "ministerios",
+            "chartMinisterios",
+            d.ministerios,
+            "Tickets"
+        );
+
+
+        crearGraficoHorizontal(
+            "organismos",
+            "chartOrganismos",
+            d.organismos,
+            "Tickets"
+        );
+
+
+        crearGraficoHorizontal(
+            "servicios",
+            "chartServicios",
+            d.servicios,
+            "Tickets"
+        );
+
+
+        crearGraficoDona(
+            "estados",
+            "chartEstados",
+            d.estados
+        );
+
+
+        crearGraficoDona(
+            "origen",
+            "chartOrigen",
+            [
+                {
+                    nombre:
+                        "Administradores Locales",
+
+                    cantidad:
+                        d.origen.administradores
+                },
+
+                {
+                    nombre:
+                        "Otros reportantes",
+
+                    cantidad:
+                        d.origen.otros
+                }
+            ]
+        );
+
+
+        estadoPagina(
+            "Datos actualizados correctamente"
+        );
+
+
+    } catch (e) {
+
+        console.error(e);
+
+        estadoPagina(
+            e.message,
+            true
+        );
     }
 }
 
 
+
+// ============================================================
+// FORMATEAR TIEMPO
+// ============================================================
+
+function formatearHoras(h) {
+
+    if (!h) {
+        return "—";
+    }
+
+
+    if (h < 24) {
+
+        return (
+            h.toFixed(1)
+            + " h"
+        );
+    }
+
+
+    return (
+        (h / 24).toFixed(1)
+        + " días"
+    );
+}
+
+
+
+// ============================================================
+// EVOLUCIÓN TEMPORAL
+// ============================================================
+
+function dibujarEvolucion(datos) {
+
+    destruirGrafico(
+        "evolucion"
+    );
+
+
+    const c =
+        document.getElementById(
+            "chartEvolucion"
+        );
+
+
+    if (!c) {
+        return;
+    }
+
+
+    graficos.evolucion =
+        new Chart(
+            c,
+            {
+
+                type:
+                    "line",
+
+
+                data: {
+
+                    labels:
+                        datos.map(
+                            x =>
+                                x.periodo
+                        ),
+
+
+                    datasets: [
+
+                        {
+
+                            label:
+                                "Recibidos",
+
+                            data:
+                                datos.map(
+                                    x =>
+                                        x.recibidos
+                                ),
+
+                            borderColor:
+                                "#3277F7",
+
+                            backgroundColor:
+                                "rgba(50,119,247,.08)",
+
+                            tension:
+                                0.25,
+
+                            borderWidth:
+                                3
+                        },
+
+
+                        {
+
+                            label:
+                                "Cerrados / solucionados",
+
+                            data:
+                                datos.map(
+                                    x =>
+                                        x.cerrados
+                                ),
+
+                            borderColor:
+                                "#36A269",
+
+                            backgroundColor:
+                                "rgba(54,162,105,.08)",
+
+                            tension:
+                                0.25,
+
+                            borderWidth:
+                                3
+                        }
+
+                    ]
+                },
+
+
+                options: {
+
+                    responsive:
+                        true,
+
+                    maintainAspectRatio:
+                        false,
+
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero:
+                                true,
+
+                            ticks: {
+
+                                precision:
+                                    0
+                            }
+                        }
+                    },
+
+
+                    plugins: {
+
+                        legend: {
+
+                            position:
+                                "bottom"
+                        }
+                    }
+                }
+            }
+        );
+}
+
+
+
+// ============================================================
+// INICIO
+// ============================================================
+
 document.addEventListener(
     "DOMContentLoaded",
-    cargarResumen
+    async () => {
+
+        try {
+
+            await cargarFiltros();
+
+            await cargarDashboard();
+
+        } catch (e) {
+
+            console.error(e);
+
+            estadoPagina(
+                e.message,
+                true
+            );
+        }
+
+
+        document
+            .getElementById(
+                "btnFiltrar"
+            )
+            ?.addEventListener(
+                "click",
+                cargarDashboard
+            );
+
+
+        document
+            .getElementById(
+                "btnLimpiar"
+            )
+            ?.addEventListener(
+                "click",
+                () =>
+                    limpiarFiltros(
+                        cargarDashboard
+                    )
+            );
+
+
+        document
+            .getElementById(
+                "agrupacion"
+            )
+            ?.addEventListener(
+                "change",
+                cargarDashboard
+            );
+
+
+        conectarBotonesPeriodos(
+            cargarDashboard
+        );
+    }
 );

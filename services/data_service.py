@@ -1,5 +1,6 @@
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import timedelta
+import os
 import re
 import unicodedata
 
@@ -10,11 +11,41 @@ import pandas as pd
 # ARCHIVOS
 # ============================================================
 
-DATA_DIR = Path("/home/usuario/Documentos/PROYECTO")
+BASE_DIR = Path(__file__).resolve().parent.parent
+PROJECT_DATA_DIR = BASE_DIR / "data"
+EXTERNAL_DATA_DIR = Path(
+    os.environ.get(
+        "ITOP_DATA_DIR",
+        "/home/usuario/Documentos/PROYECTO"
+    )
+)
 
-INCIDENTES_FILE = DATA_DIR / "Incidente Exportar.csv"
-REQUERIMIENTOS_FILE = DATA_DIR / "Requerimiento Exportar.csv"
-ADMINISTRADORES_FILE = DATA_DIR / "Jefe_de_Sectoriales_con_sus_Usuarios.csv"
+
+def _data_dir():
+    """
+    Prioridad:
+    1) ITOP_DATA_DIR si fue definido y contiene los archivos.
+    2) /home/usuario/Documentos/PROYECTO (tu ubicación actual).
+    3) data/ dentro del proyecto (respaldo incluido en el ZIP).
+    """
+    candidatos = [EXTERNAL_DATA_DIR, PROJECT_DATA_DIR]
+    for carpeta in candidatos:
+        if (
+            (carpeta / "Incidente Exportar.csv").exists()
+            and (carpeta / "Requerimiento Exportar.csv").exists()
+            and (carpeta / "Jefe_de_Sectoriales_con_sus_Usuarios.csv").exists()
+        ):
+            return carpeta
+    return PROJECT_DATA_DIR
+
+
+def rutas_archivos():
+    carpeta = _data_dir()
+    return (
+        carpeta / "Incidente Exportar.csv",
+        carpeta / "Requerimiento Exportar.csv",
+        carpeta / "Jefe_de_Sectoriales_con_sus_Usuarios.csv",
+    )
 
 
 # ============================================================
@@ -34,17 +65,17 @@ MINISTERIOS = {
     "MAyCC": "Ministerio de Ambiente y Cambio Climático",
     "MJyS": "Ministerio de Justicia y Seguridad",
 
-    # Organismos descentralizados
-    "API": "Organismos Descentralizados",
-    "IAPOS": "Organismos Descentralizados",
-    "LIF": "Organismos Descentralizados",
-    "DPVyU": "Organismos Descentralizados",
-    "DPV": "Organismos Descentralizados",
-    "LOTERIA": "Organismos Descentralizados",
-    "TC": "Organismos Descentralizados",
-    "FE": "Organismos Descentralizados",
-    "ME": "Organismos Descentralizados",
-    "OD": "Otros Organismos"
+    # Organismos cuyo código no identifica de forma inequívoca un ministerio.
+    "API": "Organismos descentralizados",
+    "IAPOS": "Organismos descentralizados",
+    "LIF": "Organismos descentralizados",
+    "DPVyU": "Organismos descentralizados",
+    "DPV": "Organismos descentralizados",
+    "LOTERIA": "Organismos descentralizados",
+    "TC": "Organismos descentralizados",
+    "FE": "Organismos descentralizados",
+    "ME": "Organismos descentralizados",
+    "OD": "Otros organismos",
 }
 
 
@@ -64,59 +95,43 @@ def leer_csv(ruta):
 def limpiar_texto(valor):
     if pd.isna(valor):
         return ""
-
     return str(valor).strip()
 
 
-def normalizar_nombre(valor):
-    """
-    Convierte:
-    'María Pérez'
-    'MARIA PEREZ'
-    'María   Pérez'
-
-    en una forma comparable.
-    """
-
+def normalizar_texto(valor):
     valor = limpiar_texto(valor).lower()
-
     valor = unicodedata.normalize("NFKD", valor)
-
-    valor = "".join(
-        c for c in valor
-        if not unicodedata.combining(c)
-    )
-
+    valor = "".join(c for c in valor if not unicodedata.combining(c))
     valor = re.sub(r"[^a-z0-9 ]", " ", valor)
     valor = re.sub(r"\s+", " ", valor)
-
     return valor.strip()
+
+
+def clave_nombre(valor):
+    # También iguala 'Pérez Juan' con 'Juan Pérez'.
+    return " ".join(sorted(normalizar_texto(valor).split()))
 
 
 def obtener_codigo_organizacion(organizacion):
     organizacion = limpiar_texto(organizacion)
-
     if not organizacion:
         return ""
-
-    return organizacion.split("#")[0].strip()
+    return organizacion.split("#", 1)[0].strip()
 
 
 def obtener_ministerio(organizacion):
     codigo = obtener_codigo_organizacion(organizacion)
-
-    return MINISTERIOS.get(
-        codigo,
-        codigo if codigo else "Sin Ministerio"
-    )
+    if not codigo:
+        return "Sin Ministerio"
+    return MINISTERIOS.get(codigo, f"Otros ({codigo})")
 
 
 def convertir_fecha(serie):
-    return pd.to_datetime(
-        serie,
-        dayfirst=True,
-        errors="coerce"
-    )
+    return pd.to_datetime(serie, dayfirst=True, errors="coerce")
+
+
+def _texto_columna(df, campo):
+    df[campo] = df[campo].fillna("").astype(str).str.strip()
 
 
 # ============================================================
@@ -124,294 +139,134 @@ def convertir_fecha(serie):
 # ============================================================
 
 def cargar_administradores():
-    df = leer_csv(ADMINISTRADORES_FILE)
-
+    _, _, archivo = rutas_archivos()
+    df = leer_csv(archivo)
     admins = []
 
     for _, fila in df.iterrows():
-
-        organismo = limpiar_texto(
-            fila.get("ORGANISMO")
-        )
-
-        sectorial = limpiar_texto(
-            fila.get("SECTORIAL")
-        )
-
-        titular = limpiar_texto(
-            fila.get("TITULAR")
-        )
-
-        usuarios = limpiar_texto(
-            fila.get("USUARIOS TIMBO - ADM LOCAL")
-        )
+        organismo = limpiar_texto(fila.get("ORGANISMO"))
+        sectorial = limpiar_texto(fila.get("SECTORIAL"))
+        titular = limpiar_texto(fila.get("TITULAR"))
+        usuarios = limpiar_texto(fila.get("USUARIOS TIMBO - ADM LOCAL"))
 
         if not usuarios:
             continue
 
-        nombres = usuarios.split(";")
-
-        for nombre in nombres:
-
+        for nombre in usuarios.split(";"):
             nombre = nombre.strip()
-
             if not nombre:
                 continue
-
             admins.append({
-                "organismo": organismo,
+                "organismo_admin": organismo,
                 "sectorial": sectorial,
                 "titular": titular,
                 "nombre": nombre,
-                "nombre_normalizado": normalizar_nombre(nombre),
-                "ministerio": obtener_ministerio(organismo)
+                "nombre_key": clave_nombre(nombre),
+                "ministerio_admin": obtener_ministerio(organismo),
             })
 
-    return pd.DataFrame(admins)
+    if not admins:
+        return pd.DataFrame(columns=[
+            "organismo_admin", "sectorial", "titular",
+            "nombre", "nombre_key", "ministerio_admin"
+        ])
+
+    return pd.DataFrame(admins).drop_duplicates(
+        subset=["nombre_key", "organismo_admin"]
+    )
 
 
 # ============================================================
-# INCIDENTES
+# INCIDENTES / REQUERIMIENTOS
 # ============================================================
 
 def cargar_incidentes():
-
-    df = leer_csv(INCIDENTES_FILE)
+    archivo, _, _ = rutas_archivos()
+    df = leer_csv(archivo)
 
     tickets = pd.DataFrame({
-        "referencia":
-            df["Incident.Ref"],
-
-        "tipo":
-            "Incidente",
-
-        "asunto":
-            df["Incident.Asunto"],
-
-        "organizacion":
-            df["Incident.Organización->Nombre común"],
-
-        "reportado_por":
-            df["Incident.Reportado por->Nombre común"],
-
-        "analista":
-            df["Incident.Analista->Nombre común"],
-
-        "servicio":
-            df["Service.Nombre"],
-
-        "estado":
-            df["Incident.Estatus"],
-
-        "estado_operativo":
-            df["Incident.Estatus Operativo"],
-
-        "fecha_inicio":
-            convertir_fecha(
-                df["Incident.Fecha de Inicio"]
-            ),
-
-        "fecha_asignacion":
-            convertir_fecha(
-                df["Incident.Fecha de Asignación"]
-            ),
-
-        "fecha_solucion":
-            convertir_fecha(
-                df["Incident.Fecha de Solución"]
-            ),
-
-        "fecha_cierre":
-            convertir_fecha(
-                df["Incident.Fecha de Cierre"]
-            ),
-
-        "fecha_fin":
-            convertir_fecha(
-                df["Incident.Fecha de Fin"]
-            ),
-
-        "fecha_real_solucion":
-            convertir_fecha(
-                df["Incident.Fecha Real de Solución"]
-            )
+        "referencia": df["Incident.Ref"],
+        "tipo": "Incidente",
+        "asunto": df["Incident.Asunto"],
+        "organizacion": df["Incident.Organización->Nombre común"],
+        "reportado_por": df["Incident.Reportado por->Nombre común"],
+        "analista": df["Incident.Analista->Nombre común"],
+        "servicio": df["Service.Nombre"],
+        "estado": df["Incident.Estatus"],
+        "estado_operativo": df["Incident.Estatus Operativo"],
+        "fecha_inicio": convertir_fecha(df["Incident.Fecha de Inicio"]),
+        "fecha_asignacion": convertir_fecha(df["Incident.Fecha de Asignación"]),
+        "fecha_solucion": convertir_fecha(df["Incident.Fecha de Solución"]),
+        "fecha_cierre": convertir_fecha(df["Incident.Fecha de Cierre"]),
+        "fecha_fin": convertir_fecha(df["Incident.Fecha de Fin"]),
+        "fecha_real_solucion": convertir_fecha(df["Incident.Fecha Real de Solución"]),
     })
-
     return preparar_tickets(tickets)
 
-
-# ============================================================
-# REQUERIMIENTOS
-# ============================================================
 
 def cargar_requerimientos():
-
-    df = leer_csv(REQUERIMIENTOS_FILE)
+    _, archivo, _ = rutas_archivos()
+    df = leer_csv(archivo)
 
     tickets = pd.DataFrame({
-        "referencia":
-            df["UserRequest.Ref"],
-
-        "tipo":
-            "Requerimiento",
-
-        "asunto":
-            df["UserRequest.Asunto"],
-
-        "organizacion":
-            df["UserRequest.Organización->Nombre común"],
-
-        "reportado_por":
-            df["UserRequest.Reportado por->Nombre común"],
-
-        "analista":
-            df["UserRequest.Analista->Nombre común"],
-
-        "servicio":
-            df["Service.Nombre"],
-
-        "estado":
-            df["UserRequest.Estatus"],
-
-        "estado_operativo":
-            df["UserRequest.Estatus Operativo"],
-
-        "fecha_inicio":
-            convertir_fecha(
-                df["UserRequest.Fecha de Inicio"]
-            ),
-
-        "fecha_asignacion":
-            convertir_fecha(
-                df["UserRequest.Fecha de Asignación"]
-            ),
-
-        "fecha_solucion":
-            convertir_fecha(
-                df["UserRequest.Fecha de Solución"]
-            ),
-
-        "fecha_cierre":
-            convertir_fecha(
-                df["UserRequest.Fecha de Cierre"]
-            ),
-
-        "fecha_fin":
-            convertir_fecha(
-                df["UserRequest.Fecha de Fin"]
-            ),
-
-        "fecha_real_solucion":
-            convertir_fecha(
-                df["UserRequest.Fecha Real de Solución"]
-            )
+        "referencia": df["UserRequest.Ref"],
+        "tipo": "Requerimiento",
+        "asunto": df["UserRequest.Asunto"],
+        "organizacion": df["UserRequest.Organización->Nombre común"],
+        "reportado_por": df["UserRequest.Reportado por->Nombre común"],
+        "analista": df["UserRequest.Analista->Nombre común"],
+        "servicio": df["Service.Nombre"],
+        "estado": df["UserRequest.Estatus"],
+        "estado_operativo": df["UserRequest.Estatus Operativo"],
+        "fecha_inicio": convertir_fecha(df["UserRequest.Fecha de Inicio"]),
+        "fecha_asignacion": convertir_fecha(df["UserRequest.Fecha de Asignación"]),
+        "fecha_solucion": convertir_fecha(df["UserRequest.Fecha de Solución"]),
+        "fecha_cierre": convertir_fecha(df["UserRequest.Fecha de Cierre"]),
+        "fecha_fin": convertir_fecha(df["UserRequest.Fecha de Fin"]),
+        "fecha_real_solucion": convertir_fecha(df["UserRequest.Fecha Real de Solución"]),
     })
-
     return preparar_tickets(tickets)
 
 
-# ============================================================
-# PREPARAR TICKETS
-# ============================================================
-
 def preparar_tickets(df):
-
     df = df.copy()
+    df = df.drop_duplicates(subset=["referencia"], keep="last")
 
-    df = df.drop_duplicates(
-        subset=["referencia"],
-        keep="last"
-    )
+    for campo in [
+        "referencia", "asunto", "organizacion", "reportado_por",
+        "analista", "servicio", "estado", "estado_operativo"
+    ]:
+        _texto_columna(df, campo)
 
-    df["ministerio"] = df["organizacion"].apply(
-        obtener_ministerio
-    )
-
+    df["ministerio"] = df["organizacion"].apply(obtener_ministerio)
     df["organismo"] = df["organizacion"]
+    df["reportado_key"] = df["reportado_por"].apply(clave_nombre)
 
-    df["reportado_normalizado"] = (
-        df["reportado_por"]
-        .fillna("")
-        .apply(normalizar_nombre)
-    )
-
-    df["estado_grupo"] = df.apply(
-        clasificar_estado,
-        axis=1
-    )
+    estado_normalizado = df["estado"].apply(normalizar_texto)
+    df["estado_grupo"] = "Abierto"
+    df.loc[estado_normalizado == "cerrado", "estado_grupo"] = "Cerrado"
+    df.loc[estado_normalizado.isin(["solucionado", "resuelto"]), "estado_grupo"] = "Resuelto"
 
     return df
 
 
-# ============================================================
-# ESTADOS
-# ============================================================
-
-def clasificar_estado(fila):
-
-    estado = normalizar_nombre(
-        fila.get("estado", "")
-    )
-
-    cerrado = [
-        "cerrado",
-        "solucionado",
-        "resuelto",
-        "completado"
-    ]
-
-    if any(x in estado for x in cerrado):
-        return "Cerrado"
-
-    return "Abierto"
-
-
-# ============================================================
-# CARGAR TODO
-# ============================================================
-
 def cargar_tickets():
-
-    incidentes = cargar_incidentes()
-    requerimientos = cargar_requerimientos()
-
     tickets = pd.concat(
-        [incidentes, requerimientos],
+        [cargar_incidentes(), cargar_requerimientos()],
         ignore_index=True
     )
+    return identificar_administradores(tickets)
 
-    tickets = identificar_administradores(tickets)
-
-    return tickets
-
-
-# ============================================================
-# IDENTIFICAR ADMIN LOCAL
-# ============================================================
 
 def identificar_administradores(tickets):
-
     admins = cargar_administradores()
-
-    nombres_admin = set(
-        admins["nombre_normalizado"]
-    )
+    keys = set(admins["nombre_key"].tolist()) if not admins.empty else set()
 
     tickets = tickets.copy()
-
-    tickets["es_admin_local"] = (
-        tickets["reportado_normalizado"]
-        .isin(nombres_admin)
+    tickets["es_admin_local"] = tickets["reportado_key"].isin(keys)
+    tickets["admin_local"] = tickets["reportado_por"].where(
+        tickets["es_admin_local"], ""
     )
-
-    tickets["admin_local"] = tickets.apply(
-        lambda fila:
-            fila["reportado_por"]
-            if fila["es_admin_local"]
-            else "",
-        axis=1
-    )
-
     return tickets
 
 
@@ -429,111 +284,65 @@ def aplicar_filtros(
     estado=None,
     servicio=None,
     persona_tipo=None,
-    persona=None
+    persona=None,
 ):
-
     df = tickets.copy()
 
     if desde:
-        fecha = pd.to_datetime(desde)
-
-        df = df[
-            df["fecha_inicio"] >= fecha
-        ]
+        fecha = pd.to_datetime(desde, errors="coerce")
+        if not pd.isna(fecha):
+            df = df[df["fecha_inicio"] >= fecha]
 
     if hasta:
-        fecha = (
-            pd.to_datetime(hasta)
-            + timedelta(days=1)
-        )
-
-        df = df[
-            df["fecha_inicio"] < fecha
-        ]
+        fecha = pd.to_datetime(hasta, errors="coerce")
+        if not pd.isna(fecha):
+            df = df[df["fecha_inicio"] < fecha + timedelta(days=1)]
 
     if ministerio:
-        df = df[
-            df["ministerio"] == ministerio
-        ]
+        df = df[df["ministerio"] == ministerio]
 
     if organismo:
-        df = df[
-            df["organismo"] == organismo
-        ]
+        df = df[df["organismo"] == organismo]
 
     if tipo:
-        df = df[
-            df["tipo"] == tipo
-        ]
+        df = df[df["tipo"] == tipo]
 
     if estado:
-
-        if estado in ["Abierto", "Cerrado"]:
-
-            df = df[
-                df["estado_grupo"] == estado
-            ]
-
+        if estado == "__abiertos__":
+            df = df[df["estado_grupo"] == "Abierto"]
+        elif estado == "__finalizados__":
+            df = df[df["estado_grupo"].isin(["Cerrado", "Resuelto"])]
         else:
-
-            df = df[
-                df["estado"] == estado
-            ]
+            df = df[df["estado"] == estado]
 
     if servicio:
-        df = df[
-            df["servicio"] == servicio
-        ]
+        df = df[df["servicio"] == servicio]
 
     if persona:
-
         columnas = {
             "reportado": "reportado_por",
             "admin": "admin_local",
-            "analista": "analista"
+            "analista": "analista",
         }
-
-        columna = columnas.get(
-            persona_tipo,
-            "reportado_por"
-        )
-
-        if columna in df.columns:
-
-            df = df[
-                df[columna] == persona
-            ]
+        columna = columnas.get(persona_tipo)
+        if columna:
+            df = df[df[columna] == persona]
 
     return df
 
 
 # ============================================================
-# RESUMEN
+# RESÚMENES
 # ============================================================
 
 def resumen_numerico(df):
-
-    total = len(df)
-
-    incidentes = len(
-        df[df["tipo"] == "Incidente"]
-    )
-
-    requerimientos = len(
-        df[df["tipo"] == "Requerimiento"]
-    )
-
-    cerrados = len(
-        df[df["estado_grupo"] == "Cerrado"]
-    )
-
-    abiertos = total - cerrados
-
-    porcentaje = (
-        round(cerrados / total * 100, 1)
-        if total
-        else 0
-    )
+    total = int(len(df))
+    incidentes = int((df["tipo"] == "Incidente").sum())
+    requerimientos = int((df["tipo"] == "Requerimiento").sum())
+    cerrados = int((df["estado_grupo"] == "Cerrado").sum())
+    resueltos = int((df["estado_grupo"] == "Resuelto").sum())
+    abiertos = int((df["estado_grupo"] == "Abierto").sum())
+    finalizados = cerrados + resueltos
 
     return {
         "total": total,
@@ -541,128 +350,124 @@ def resumen_numerico(df):
         "requerimientos": requerimientos,
         "abiertos": abiertos,
         "cerrados": cerrados,
-        "porcentaje_resolucion": porcentaje
+        "resueltos": resueltos,
+        "finalizados": finalizados,
+        "porcentaje_resolucion": round(finalizados * 100 / total, 1) if total else 0,
     }
 
 
-# ============================================================
-# CONTAR POR CAMPO
-# ============================================================
-
 def contar_por(df, campo, limite=None):
-
     if campo not in df.columns:
         return []
-
-    datos = (
-        df[campo]
-        .fillna("Sin dato")
-        .replace("", "Sin dato")
-        .value_counts()
-    )
-
+    serie = df[campo].fillna("").astype(str).str.strip()
+    serie = serie[serie != ""]
+    conteo = serie.value_counts()
     if limite:
-        datos = datos.head(limite)
-
+        conteo = conteo.head(limite)
     return [
-        {
-            "nombre": str(nombre),
-            "cantidad": int(cantidad)
-        }
-        for nombre, cantidad in datos.items()
+        {"nombre": str(nombre), "cantidad": int(cantidad)}
+        for nombre, cantidad in conteo.items()
     ]
 
 
-# ============================================================
-# EVOLUCIÓN TEMPORAL
-# ============================================================
-
-def evolucion(df):
-
-    temp = df[
-        df["fecha_inicio"].notna()
-    ].copy()
-
-    if temp.empty:
+def resumen_administradores(df, limite=None):
+    admins = df[df["es_admin_local"]].copy()
+    if admins.empty:
         return []
 
-    temp["periodo"] = (
-        temp["fecha_inicio"]
-        .dt.to_period("M")
-        .astype(str)
-    )
-
-    recibidos = (
-        temp
-        .groupby("periodo")
+    agrupado = (
+        admins.groupby(["admin_local", "ministerio", "organismo", "tipo"])
         .size()
+        .reset_index(name="cantidad")
     )
 
-    cerrados = (
-        temp[
-            temp["estado_grupo"] == "Cerrado"
-        ]
-        .groupby("periodo")
-        .size()
-    )
+    salida = {}
+    for _, fila in agrupado.iterrows():
+        clave = (fila["admin_local"], fila["ministerio"], fila["organismo"])
+        if clave not in salida:
+            salida[clave] = {
+                "nombre": fila["admin_local"],
+                "ministerio": fila["ministerio"],
+                "organismo": fila["organismo"],
+                "incidentes": 0,
+                "requerimientos": 0,
+                "cantidad": 0,
+            }
+        if fila["tipo"] == "Incidente":
+            salida[clave]["incidentes"] += int(fila["cantidad"])
+        else:
+            salida[clave]["requerimientos"] += int(fila["cantidad"])
+        salida[clave]["cantidad"] += int(fila["cantidad"])
 
-    periodos = sorted(
-        set(recibidos.index)
-        | set(cerrados.index)
-    )
+    filas = sorted(salida.values(), key=lambda x: x["cantidad"], reverse=True)
+    return filas[:limite] if limite else filas
 
+
+# ============================================================
+# EVOLUCIÓN Y TIEMPOS
+# ============================================================
+
+def _etiqueta_periodo(serie, agrupacion):
+    if agrupacion == "semana":
+        lunes = serie - pd.to_timedelta(serie.dt.weekday, unit="D")
+        return lunes.dt.strftime("%Y-%m-%d")
+    if agrupacion == "anio":
+        return serie.dt.strftime("%Y")
+    return serie.dt.strftime("%Y-%m")
+
+
+def evolucion(df, agrupacion="mes"):
+    if agrupacion not in ["semana", "mes", "anio"]:
+        agrupacion = "mes"
+
+    recibidos = df[df["fecha_inicio"].notna()].copy()
+    recibidos["periodo"] = _etiqueta_periodo(recibidos["fecha_inicio"], agrupacion)
+    serie_recibidos = recibidos.groupby("periodo").size()
+
+    terminados = df.copy()
+    terminados["fecha_final"] = (
+        terminados["fecha_real_solucion"]
+        .fillna(terminados["fecha_solucion"])
+        .fillna(terminados["fecha_cierre"])
+        .fillna(terminados["fecha_fin"])
+    )
+    terminados = terminados[
+        terminados["estado_grupo"].isin(["Cerrado", "Resuelto"])
+        & terminados["fecha_final"].notna()
+    ].copy()
+    terminados["periodo"] = _etiqueta_periodo(terminados["fecha_final"], agrupacion)
+    serie_finalizados = terminados.groupby("periodo").size()
+
+    periodos = sorted(set(serie_recibidos.index) | set(serie_finalizados.index))
     return [
         {
             "periodo": periodo,
-            "recibidos": int(
-                recibidos.get(periodo, 0)
-            ),
-            "cerrados": int(
-                cerrados.get(periodo, 0)
-            )
+            "recibidos": int(serie_recibidos.get(periodo, 0)),
+            "cerrados": int(serie_finalizados.get(periodo, 0)),
         }
         for periodo in periodos
     ]
 
 
-# ============================================================
-# TIEMPO PROMEDIO
-# ============================================================
-
 def tiempo_promedio_horas(df):
-
     temp = df.copy()
-
     temp["fecha_resolucion_final"] = (
         temp["fecha_real_solucion"]
         .fillna(temp["fecha_solucion"])
         .fillna(temp["fecha_cierre"])
+        .fillna(temp["fecha_fin"])
     )
-
     temp = temp[
         temp["fecha_inicio"].notna()
         & temp["fecha_resolucion_final"].notna()
     ]
-
     if temp.empty:
         return 0
-
     horas = (
-        temp["fecha_resolucion_final"]
-        - temp["fecha_inicio"]
+        temp["fecha_resolucion_final"] - temp["fecha_inicio"]
     ).dt.total_seconds() / 3600
-
-    horas = horas[
-        horas >= 0
-    ]
-
-    if horas.empty:
-        return 0
-
-    return round(
-        horas.mean(),
-        1
-    )
+    horas = horas[(horas >= 0) & horas.notna()]
+    return round(float(horas.mean()), 1) if not horas.empty else 0
 
 
 # ============================================================
@@ -670,48 +475,96 @@ def tiempo_promedio_horas(df):
 # ============================================================
 
 def opciones_filtros():
-
     tickets = cargar_tickets()
 
-    admins = cargar_administradores()
-
     def valores(campo):
-        return sorted(
-            tickets[campo]
-            .dropna()
-            .astype(str)
-            .loc[lambda x: x.str.strip() != ""]
-            .unique()
-            .tolist()
+        serie = tickets[campo].dropna().astype(str).str.strip()
+        return sorted(serie[serie != ""].unique().tolist())
+
+    organismos_por_ministerio = {}
+    for ministerio, grupo in tickets.groupby("ministerio"):
+        serie = grupo["organismo"].dropna().astype(str).str.strip()
+        organismos_por_ministerio[ministerio] = sorted(
+            serie[serie != ""].unique().tolist()
         )
 
+    admins = tickets[tickets["es_admin_local"]]
+
     return {
-        "ministerios":
-            valores("ministerio"),
-
-        "organismos":
-            valores("organismo"),
-
-        "estados":
-            valores("estado"),
-
-        "servicios":
-            valores("servicio"),
-
+        "ministerios": valores("ministerio"),
+        "organismos": valores("organismo"),
+        "organismos_por_ministerio": organismos_por_ministerio,
+        "estados": valores("estado"),
+        "servicios": valores("servicio"),
         "personas": {
+            "reportado": valores("reportado_por"),
+            "analista": valores("analista"),
+            "admin": sorted(admins["admin_local"].dropna().astype(str).unique().tolist()),
+            "creador": [],
+        },
+    }
 
-            "reportado":
-                valores("reportado_por"),
 
-            "analista":
-                valores("analista"),
+# ============================================================
+# MINISTERIOS / ORGANISMOS
+# ============================================================
 
-            "admin":
-                sorted(
-                    admins["nombre"]
-                    .dropna()
-                    .unique()
-                    .tolist()
-                )
-        }
+def resumen_ministerios(df):
+    salida = []
+    for ministerio, grupo in df.groupby("ministerio"):
+        r = resumen_numerico(grupo)
+        salida.append({"ministerio": ministerio, **r})
+    return sorted(salida, key=lambda x: x["total"], reverse=True)
+
+
+def detalle_ministerio(df, ministerio):
+    resumen = resumen_numerico(df)
+
+    organismos = []
+    for organismo, grupo in df.groupby("organismo"):
+        r = resumen_numerico(grupo)
+        organismos.append({
+            "organismo": organismo,
+            "incidentes": r["incidentes"],
+            "requerimientos": r["requerimientos"],
+            "abiertos": r["abiertos"],
+            "cerrados": r["cerrados"],
+            "resueltos": r["resueltos"],
+            "total": r["total"],
+        })
+    organismos.sort(key=lambda x: x["total"], reverse=True)
+
+    admins = resumen_administradores(df)
+    admins_inc = [
+        {"nombre": x["nombre"], "organismo": x["organismo"], "cantidad": x["incidentes"]}
+        for x in admins if x["incidentes"] > 0
+    ]
+    admins_req = [
+        {"nombre": x["nombre"], "organismo": x["organismo"], "cantidad": x["requerimientos"]}
+        for x in admins if x["requerimientos"] > 0
+    ]
+
+    return {
+        "ministerio": ministerio,
+        "resumen": resumen,
+        "organismos": organismos,
+        "admins_incidentes": admins_inc,
+        "admins_requerimientos": admins_req,
+    }
+
+
+def detalle_organismo(df, organismo):
+    resumen = resumen_numerico(df)
+    admins = resumen_administradores(df)
+    return {
+        "organismo": organismo,
+        "resumen": resumen,
+        "admins_incidentes": [
+            {"nombre": x["nombre"], "cantidad": x["incidentes"]}
+            for x in admins if x["incidentes"] > 0
+        ],
+        "admins_requerimientos": [
+            {"nombre": x["nombre"], "cantidad": x["requerimientos"]}
+            for x in admins if x["requerimientos"] > 0
+        ],
     }
