@@ -27,7 +27,38 @@
 </aside>
 
 <main class="content">
-<section class="page-header"><div><span class="eyebrow">UGD · iTop</span><h1>Dashboard General</h1><p>Situación operativa de incidentes y requerimientos registrados en iTop.</p></div><div id="estadoConexion" class="status-pill"><span class="status-dot"></span>Cargando datos...</div></section>
+
+<section class="page-header">
+    <div>
+        <span class="eyebrow">UGD · iTop</span>
+        <h1>Dashboard General</h1>
+        <p>Situación operativa de incidentes y requerimientos registrados en iTop.</p>
+    </div>
+
+    <div class="header-actions">
+
+        <div class="actualizar-datos">
+            <button
+                class="btn btn-primary"
+                id="btnActualizarDatos"
+                type="button">
+                <span id="actualizarIcono">⟳</span>
+                <span id="actualizarTexto">Actualizar datos desde iTop</span>
+            </button>
+
+            <span class="ultima-actualizacion" id="actualizarMeta">
+                Última actualización: —
+            </span>
+        </div>
+
+        <div id="estadoConexion" class="status-pill">
+            <span class="status-dot"></span>
+            Cargando datos...
+        </div>
+
+    </div>
+</section>
+
 
 <section class="toolbar">
     <div class="field"><label>Desde</label><input type="date" id="desde"></div>

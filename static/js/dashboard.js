@@ -1,3 +1,85 @@
+const btnActualizarDatos = document.getElementById("btnActualizarDatos");
+const actualizarTexto = document.getElementById("actualizarTexto");
+const actualizarMeta = document.getElementById("actualizarMeta");
+const actualizarIcono = document.getElementById("actualizarIcono");
+
+
+if (btnActualizarDatos) {
+
+    // Recuperar última actualización guardada
+    const ultimaActualizacion = localStorage.getItem("ultimaActualizacionItop");
+
+    if (ultimaActualizacion) {
+        actualizarMeta.textContent =
+            `Última actualización: ${ultimaActualizacion}`;
+    }
+
+
+    btnActualizarDatos.addEventListener("click", async () => {
+
+        try {
+
+            // Evitar múltiples clicks
+            btnActualizarDatos.disabled = true;
+
+            actualizarIcono.textContent = "⟳";
+            actualizarTexto.textContent = "Actualizando datos...";
+
+            const respuesta = await fetch("/actualizar-datos", {
+                method: "POST"
+            });
+
+            const datos = await respuesta.json();
+
+
+            if (!respuesta.ok || !datos.ok) {
+                throw new Error(
+                    datos.mensaje || "No se pudieron actualizar los datos"
+                );
+            }
+
+
+            actualizarTexto.textContent = "Datos actualizados";
+
+            actualizarMeta.textContent =
+                `Última actualización: ${datos.fecha}`;
+
+
+            // Guardamos la fecha para que no desaparezca al recargar
+            localStorage.setItem(
+                "ultimaActualizacionItop",
+                datos.fecha
+            );
+
+
+            // Esperamos un instante y recargamos el dashboard
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
+
+        } catch (error) {
+
+            console.error(error);
+
+            actualizarTexto.textContent = "Error al actualizar";
+
+            alert(
+                "No se pudieron actualizar los datos desde iTop.\n\n" 
+            );
+
+
+        } finally {
+
+            btnActualizarDatos.disabled = false;
+
+        }
+
+    });
+
+}
+
+
 async function cargarDashboard() {
 
     estadoPagina("Cargando datos...");
@@ -325,7 +407,6 @@ function dibujarEvolucion(datos) {
 // ============================================================
 // INICIO
 // ============================================================
-
 document.addEventListener(
     "DOMContentLoaded",
     async () => {

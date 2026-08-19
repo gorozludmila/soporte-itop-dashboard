@@ -1,5 +1,5 @@
 from flask import Flask, render_template, jsonify, request
-
+from exportacionitop import ejecutar
 from services.data_service import (
     cargar_tickets,
     aplicar_filtros,
@@ -329,6 +329,15 @@ def api_tickets():
         resumen = resumen_numerico(
             tickets
         )
+
+        resumen["evolucion"] = evolucion(
+    tickets,
+    request.args.get(
+        "agrupacion",
+        "mes"
+    )
+)
+
 
 
         # ----------------------------------------
@@ -730,7 +739,28 @@ def api_administradores():
             "error": str(error)
         }), 500
 
+@app.route("/actualizar-datos", methods=["POST"])
+def actualizar_datos():
+    try:
+        ejecutar()
 
+        ahora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+
+        return {
+            "ok": True,
+            "mensaje": "Datos actualizados correctamente",
+            "fecha": ahora
+        }
+
+    except Exception as error:
+
+        print("ERROR AL ACTUALIZAR DATOS:")
+        print(error)
+
+        return {
+            "ok": False,
+            "mensaje": str(error)
+        }, 500
 # ============================================================
 # SERVIDOR
 # ============================================================

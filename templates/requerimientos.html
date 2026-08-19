@@ -61,6 +61,23 @@
     <article class="kpi green"><span>Cerrados</span><strong id="tipoCerrados">0</strong></article>
     <article class="kpi blue"><span>Resueltos</span><strong id="tipoResueltos">0</strong></article>
 </section>
+
+
+<!--GRAFICO QUE HAY FALTA CONECTAR CON LOS DATOS DE LOS INCIDENTES -->
+<section class="grid grid-main">
+    <article class="card"><div class="card-title-row"><div>
+        <h3>Tickets recibidos vs cerrados / solucionados</h3>
+        <p class="subtitle">Evolución temporal.</p></div>
+        <select id="agrupacion" class="mini-select">
+            <option value="semana">Semanal</option>
+            <option value="mes" selected>Mensual</option>
+            <option value="anio">Anual</option>
+        </select></div>
+            <div class="chart"><canvas id="chartEvolucion"></canvas></div>
+        </article>
+</section>
+
+
 <section class="grid equal"><article class="card"><h3>Requerimientos por Organismo</h3><div class="chart tall"><canvas id="chartOrganismos"></canvas></div></article><article class="card"><h3>Requerimientos por Servicio</h3><div class="chart tall"><canvas id="chartServicios"></canvas></div></article></section>
 <section class="grid equal"><article class="card"><h3>Requerimientos por Ministerio</h3><div class="chart tall"><canvas id="chartMinisterios"></canvas></div></article><article class="card"><h3>Requerimientos por Estado</h3><div class="chart tall"><canvas id="chartEstados"></canvas></div></article></section>
 <!--<section class="grid equal"><article class="card"><h3>Por Administrador Local</h3><div class="chart tall"><canvas id="chartAdmins"></canvas></div></article><article class="card"><h3>Por persona que reporta</h3><div class="chart tall"><canvas id="chartReportantes"></canvas></div></article></section>-->

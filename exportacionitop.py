@@ -8,9 +8,8 @@ from pathlib import Path
 
 URL = "https://app.santafe.gob.ar/itsm/pages/UI.php?c%5Bmenu%5D=WelcomeMenuPage"
 
-USUARIO = "23462968949"
-CONTRASENA = "ConraMaldo04"
-
+USUARIO = "27437566807"
+CONTRASENA = "BelenG43756680"
 
 # =========================
 # CARPETA DATA DEL PROYECTO
@@ -52,17 +51,14 @@ def iniciar_sesion(page: Page):
     )
 
     try:
-
         usuario.wait_for(
             state="visible",
             timeout=3000
         )
 
     except:
-
         print("✅ La sesión ya está iniciada")
         print(f"📍 URL actual: {page.url}")
-
         return
 
     print("🔐 Completando credenciales...")
@@ -106,9 +102,16 @@ def iniciar_sesion(page: Page):
         "domcontentloaded"
     )
 
-    print(
-        f"📍 URL después del login: {page.url}"
-    )
+    page.wait_for_timeout(3000)
+
+    print(f"📍 URL después del login: {page.url}")
+    print(f"📄 Título: {page.title()}")
+
+    if page.url.startswith("chrome-error://"):
+        raise Exception(
+            "Chrome no pudo cargar la página después del login. "
+            "Revisar proxy/conectividad con SSO/iTop."
+        )
 
 
 def abrir_exportacion_csv(
@@ -166,10 +169,13 @@ def abrir_exportacion_csv(
         state="visible",
         timeout=30_000
     )
+    print("✅ Opción Exportar a CSV encontrada")
 
     exportar_csv.click()
-
     print("✅ Click en Exportar a CSV realizado")
+
+
+
 
 
 # =========================
@@ -483,9 +489,13 @@ def ejecutar():
         print("🚀 Iniciando Chrome...")
 
         navegador = p.chromium.launch(
-            headless=False,
+            headless=True,
             slow_mo=300,
-            channel="chrome"
+            channel="chrome",
+            proxy={
+                "server": "http://10.10.254.218:3128",
+                "bypass": "*.santafe.gob.ar,santafe.gob.ar"
+            }
         )
 
         contexto = navegador.new_context(
