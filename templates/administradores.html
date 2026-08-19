@@ -39,10 +39,9 @@
     <div class="field"><label>Servicio</label><select id="servicio"><option value="">Todos</option></select></div>
     <div class="field"><label>Persona</label>
         <select id="persona_tipo">
-            <option value="reportado">Persona que reporta</option>
+           
             <option value="admin">Administrador Local</option>
-            <option value="analista">Analista UGD</option>
-            <option value="creador" disabled>Creador (no viene en CSV)</option>
+           
         </select>
     </div>
     <div class="field"><label>Nombre</label><select id="persona"><option value="">Todas</option></select></div>
@@ -55,9 +54,52 @@
     <button class="btn btn-light" id="btnLimpiar" type="button">Limpiar</button>
 </section>
 
-<section class="kpis kpis-tipo"><article class="kpi"><span>Administradores con tickets</span><strong id="totalAdministradores">0</strong></article><article class="kpi orange"><span>Incidentes</span><strong id="totalIncidentes">0</strong></article><article class="kpi purple"><span>Requerimientos</span><strong id="totalRequerimientos">0</strong></article><article class="kpi green"><span>Total tickets</span><strong id="totalTickets">0</strong></article></section>
-<section class="card"><h3>Tickets por Administrador Local</h3><div class="chart admins-chart"><canvas id="chartAdministradores"></canvas></div></section>
-<section class="card"><h3>Detalle por Administrador Local</h3><div class="table-wrapper"><table class="table"><thead><tr><th>Administrador</th><th>Ministerio</th><th>Organismo</th><th>Incidentes</th><th>Requerimientos</th><th>Total</th></tr></thead><tbody id="tablaAdministradores"></tbody></table></div></section>
+<section class="kpis kpis-tipo"><article class="kpi">
+    <span>Administradores con tickets</span>
+    <strong id="totalAdministradores">0</strong></article><article class="kpi orange"><span>Incidentes</span><strong id="totalIncidentes">0</strong></article><article class="kpi purple"><span>Requerimientos</span><strong id="totalRequerimientos">0</strong></article><article class="kpi green"><span>Total tickets</span><strong id="totalTickets">0</strong></article></section>
+<section class="card"><h3>Tickets por Administrador Local</h3>
+    <div class="chart admins-chart"><canvas id="chartAdministradores"></canvas></div></section>
+<section class="card"><h3>Detalle por Administrador Local</h3>
+    <div class="table-wrapper"><table class="table">
+        
+   <thead>
+<tr>
+
+    <th class="sortable" data-columna="nombre">
+        Administrador
+        <span class="sort-icon">↕</span>
+    </th>
+
+    <th class="sortable" data-columna="ministerio">
+        Ministerio
+        <span class="sort-icon">↕</span>
+    </th>
+
+    <th class="sortable" data-columna="organismo">
+        Organismo
+        <span class="sort-icon">↕</span>
+    </th>
+
+    <th class="sortable" data-columna="incidentes">
+        Incidentes
+        <span class="sort-icon">↕</span>
+    </th>
+
+    <th class="sortable" data-columna="requerimientos">
+        Requerimientos
+        <span class="sort-icon">↕</span>
+    </th>
+
+    <th class="sortable" data-columna="cantidad">
+        Total
+        <span class="sort-icon">↕</span>
+    </th>
+
+</tr>
+</thead>
+        
+        
+        <tbody id="tablaAdministradores"></tbody></table></div></section>
 </main></div>
 <script src="{{ url_for('static', filename='js/common.js') }}"></script>
 <script src="{{ url_for('static', filename='js/administradores.js') }}"></script>

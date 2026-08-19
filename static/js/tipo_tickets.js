@@ -20,10 +20,213 @@ async function cargarTipo(){
         llenarTablaAdmins(d.por_admin);
         estadoPagina("Datos actualizados correctamente");}
         catch(e){console.error(e);
-            estadoPagina(e.message,true);}}
-function llenarTablaAdmins(datos){const t=document.getElementById("tablaAdministradores");if(!t)return;if(!datos.length){t.innerHTML='<tr><td colspan="4" class="empty">No hay Administradores Locales para este filtro.</td></tr>';return;}t.innerHTML=datos.map(x=>`<tr><td>${escaparHtml(x.nombre)}</td><td>${escaparHtml(x.ministerio)}</td><td>${escaparHtml(x.organismo)}</td><td class="num">${x.cantidad}</td></tr>`).join("");}
-document.addEventListener("DOMContentLoaded",async()=>{try{await cargarFiltros();await cargarTipo();}catch(e){console.error(e);estadoPagina(e.message,true);}document.getElementById("btnFiltrar")?.addEventListener("click",cargarTipo);document.getElementById("btnLimpiar")?.addEventListener("click",()=>limpiarFiltros(cargarTipo));conectarBotonesPeriodos(cargarTipo);});
+            estadoPagina(e.message,true);}
+        }
 
+let datosAdministradoresTabla = [];
+
+let ordenTabla = {
+    columna: "cantidad",
+    direccion: "desc"
+};
+
+
+function llenarTablaAdmins(datos) {
+
+    datosAdministradoresTabla = [...datos];
+
+    ordenarTablaAdministradores();
+}
+
+
+function ordenarTablaAdministradores() {
+
+    const t = document.getElementById("tablaAdministradores");
+
+    if (!t) {
+        return;
+    }
+
+
+    if (!datosAdministradoresTabla.length) {
+
+        t.innerHTML =
+            '<tr>' +
+            '<td colspan="4" class="empty">' +
+            'No hay Administradores Locales para este filtro.' +
+            '</td>' +
+            '</tr>';
+
+        return;
+    }
+
+
+    const datosOrdenados =
+        [...datosAdministradoresTabla].sort((a, b) => {
+
+            const columna = ordenTabla.columna;
+
+            let valorA = a[columna];
+            let valorB = b[columna];
+
+
+            // Orden numérico
+            if (columna === "cantidad") {
+
+                valorA = Number(valorA) || 0;
+                valorB = Number(valorB) || 0;
+
+                return ordenTabla.direccion === "asc"
+                    ? valorA - valorB
+                    : valorB - valorA;
+            }
+
+
+            // Orden alfabético
+            valorA = String(valorA || "").toLowerCase();
+            valorB = String(valorB || "").toLowerCase();
+
+
+            const resultado =
+                valorA.localeCompare(
+                    valorB,
+                    "es",
+                    {
+                        sensitivity: "base"
+                    }
+                );
+
+
+            return ordenTabla.direccion === "asc"
+                ? resultado
+                : -resultado;
+        });
+
+
+    t.innerHTML =
+        datosOrdenados.map(
+            x => `
+                <tr>
+                    <td>${escaparHtml(x.nombre)}</td>
+                    <td>${escaparHtml(x.ministerio)}</td>
+                    <td>${escaparHtml(x.organismo)}</td>
+                    <td class="num">${x.cantidad}</td>
+                </tr>
+            `
+        ).join("");
+
+
+    actualizarFlechasOrden();
+}
+
+function actualizarFlechasOrden() {
+
+    document
+        .querySelectorAll("th.sortable")
+        .forEach(th => {
+
+            const icono =
+                th.querySelector(".sort-icon");
+
+            if (!icono) {
+                return;
+            }
+
+
+            if (
+                th.dataset.columna ===
+                ordenTabla.columna
+            ) {
+
+                icono.textContent =
+                    ordenTabla.direccion === "asc"
+                        ? "▲"
+                        : "▼";
+
+            } else {
+
+                icono.textContent = "↕";
+            }
+        });
+}
+
+function conectarOrdenTabla() {
+
+    document
+        .querySelectorAll("th.sortable")
+        .forEach(th => {
+
+            th.addEventListener(
+                "click",
+                () => {
+
+                    const columna =
+                        th.dataset.columna;
+
+
+                    if (
+                        ordenTabla.columna === columna
+                    ) {
+
+                        ordenTabla.direccion =
+                            ordenTabla.direccion === "asc"
+                                ? "desc"
+                                : "asc";
+
+                    } else {
+
+                        ordenTabla.columna =
+                            columna;
+
+                        ordenTabla.direccion =
+                            columna === "cantidad"
+                                ? "desc"
+                                : "asc";
+                    }
+
+
+                    ordenarTablaAdministradores();
+                }
+            );
+        });
+}
+
+document.addEventListener(
+    "DOMContentLoaded",
+    async () => {
+
+        conectarOrdenTabla();
+
+        try {
+
+            await cargarFiltros();
+            await cargarTipo();
+
+        } catch (e) {
+
+            console.error(e);
+            estadoPagina(e.message, true);
+        }
+
+        document
+            .getElementById("btnFiltrar")
+            ?.addEventListener(
+                "click",
+                cargarTipo
+            );
+
+        document
+            .getElementById("btnLimpiar")
+            ?.addEventListener(
+                "click",
+                () => limpiarFiltros(cargarTipo)
+            );
+
+        conectarBotonesPeriodos(
+            cargarTipo
+        );
+    }
+);
 
 
 

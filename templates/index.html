@@ -68,16 +68,7 @@
     <div class="field"><label>Ticket</label><select id="tipo"><option value="">Todos</option><option value="Incidente">Incidentes</option><option value="Requerimiento">Requerimientos</option></select></div>
     <div class="field"><label>Estado</label><select id="estado"><option value="">Todos</option></select></div>
     <div class="field"><label>Servicio</label><select id="servicio"><option value="">Todos</option></select></div>
-    <div class="field"><label>Persona</label>
-        <select id="persona_tipo">
-            <option value="reportado">Persona que reporta</option>
-            <option value="admin">Administrador Local</option>
-            <option value="analista">Analista UGD</option>
-            <option value="creador" disabled>Creador (no viene en CSV)</option>
-        </select>
-    </div>
-    <div class="field"><label>Nombre</label><select id="persona"><option value="">Todas</option></select></div>
-    <div class="quick">
+   <div class="quick">
         <button type="button" data-periodo="semana">Semana</button>
         <button type="button" data-periodo="mes">Mes</button>
         <button type="button" data-periodo="anio">Año</button>
@@ -97,9 +88,9 @@
     <!--<article class="kpi muted"><span>Cumplimiento SLA</span><strong id="sla">Sin dato</strong></article>-->
     <article class="kpi purple"><span>Tiempo promedio</span><strong id="tiempo">—</strong></article>
 </section>
-<section class="grid grid-main">
+<section class="grid grid-full">
     <article class="card"><div class="card-title-row"><div><h3>Tickets recibidos vs cerrados / solucionados</h3><p class="subtitle">Evolución temporal.</p></div><select id="agrupacion" class="mini-select"><option value="semana">Semanal</option><option value="mes" selected>Mensual</option><option value="anio">Anual</option></select></div><div class="chart"><canvas id="chartEvolucion"></canvas></div></article>
-    <article class="card"><h3>Origen de la demanda</h3><p class="subtitle">Administrador Local vs otros reportantes.</p><div class="chart"><canvas id="chartOrigen"></canvas></div></article>
+    <!--<article class="card"><h3>Origen de la demanda</h3><p class="subtitle">Administrador Local vs otros reportantes.</p><div class="chart"><canvas id="chartOrigen"></canvas></div></article>-->
 </section>
 <section class="grid equal"><article class="card"><h3>Tickets por Ministerio</h3><div class="chart tall"><canvas id="chartMinisterios"></canvas></div></article><article class="card"><h3>Estados registrados</h3><div class="chart tall"><canvas id="chartEstados"></canvas></div></article></section>
 <section class="grid equal"><article class="card"><h3>Servicios más demandados</h3><div class="chart tall"><canvas id="chartServicios"></canvas></div></article><article class="card"><h3>Organismos con más tickets</h3><div class="chart tall"><canvas id="chartOrganismos"></canvas></div></article></section>
