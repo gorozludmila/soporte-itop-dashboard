@@ -3,35 +3,19 @@ from datetime import timedelta
 import os
 import re
 import unicodedata
-
 import pandas as pd
 
-
-# ============================================================
 # ARCHIVOS
-# ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 PROJECT_DATA_DIR = BASE_DIR / "data"
-EXTERNAL_DATA_DIR = Path(
-    os.environ.get(
-        "ITOP_DATA_DIR",
-        "/home/usuario/Documentos/PROYECTO"
-    )
-)
+EXTERNAL_DATA_DIR = Path( os.environ.get( "ITOP_DATA_DIR", "/home/usuario/Documentos/PROYECTO" ))
 
 
 def _data_dir():
-    """
-    Prioridad:
-    1) ITOP_DATA_DIR si fue definido y contiene los archivos.
-    2) /home/usuario/Documentos/PROYECTO (tu ubicación actual).
-    3) data/ dentro del proyecto (respaldo incluido en el ZIP).
-    """
     candidatos = [EXTERNAL_DATA_DIR, PROJECT_DATA_DIR]
     for carpeta in candidatos:
-        if (
-            (carpeta / "Incidente Exportar.csv").exists()
+        if (  (carpeta / "Incidente Exportar.csv").exists()
             and (carpeta / "Requerimiento Exportar.csv").exists()
             and (carpeta / "Jefe_de_Sectoriales_con_sus_Usuarios.csv").exists()
         ):
@@ -41,17 +25,9 @@ def _data_dir():
 
 def rutas_archivos():
     carpeta = _data_dir()
-    return (
-        carpeta / "Incidente Exportar.csv",
-        carpeta / "Requerimiento Exportar.csv",
-        carpeta / "Jefe_de_Sectoriales_con_sus_Usuarios.csv",
-    )
+    return ( carpeta / "Incidente Exportar.csv", carpeta / "Requerimiento Exportar.csv", carpeta / "Jefe_de_Sectoriales_con_sus_Usuarios.csv" )
 
-
-# ============================================================
 # MINISTERIOS
-# ============================================================
-
 MINISTERIOS = {
     "MGeIP": "Ministerio de Gobierno e Innovación Pública",
     "MTEySS": "Ministerio de Trabajo, Empleo y Seguridad Social",
@@ -78,19 +54,9 @@ MINISTERIOS = {
     "OD": "Otros organismos",
 }
 
-
-# ============================================================
 # UTILIDADES
-# ============================================================
-
 def leer_csv(ruta):
-    return pd.read_csv(
-        ruta,
-        encoding="utf-8-sig",
-        sep=None,
-        engine="python"
-    )
-
+    return pd.read_csv(ruta, encoding="utf-8-sig", sep=None,engine="python")
 
 def limpiar_texto(valor):
     if pd.isna(valor):
@@ -166,19 +132,13 @@ def cargar_administradores():
             })
 
     if not admins:
-        return pd.DataFrame(columns=[
-            "organismo_admin", "sectorial", "titular",
-            "nombre", "nombre_key", "ministerio_admin"
-        ])
+        return pd.DataFrame(columns=[ "organismo_admin", "sectorial", "titular", "nombre", "nombre_key", "ministerio_admin" ])
 
     return pd.DataFrame(admins).drop_duplicates(
         subset=["nombre_key", "organismo_admin"]
     )
 
-
-# ============================================================
 # INCIDENTES / REQUERIMIENTOS
-# ============================================================
 
 def cargar_incidentes():
     archivo, _, _ = rutas_archivos()
@@ -232,12 +192,8 @@ def preparar_tickets(df):
     df = df.copy()
     df = df.drop_duplicates(subset=["referencia"], keep="last")
 
-    for campo in [
-        "referencia", "asunto", "organizacion", "reportado_por",
-        "analista", "servicio", "estado", "estado_operativo"
-    ]:
+    for campo in [ "referencia", "asunto", "organizacion", "reportado_por",  "analista", "servicio", "estado", "estado_operativo"]:
         _texto_columna(df, campo)
-
     df["ministerio"] = df["organizacion"].apply(obtener_ministerio)
     df["organismo"] = df["organizacion"]
     df["reportado_key"] = df["reportado_por"].apply(clave_nombre)
@@ -269,11 +225,7 @@ def identificar_administradores(tickets):
     )
     return tickets
 
-
-# ============================================================
 # FILTROS
-# ============================================================
-
 def aplicar_filtros(
     tickets,
     desde=None,
@@ -416,7 +368,7 @@ def _etiqueta_periodo(serie, agrupacion):
     return serie.dt.strftime("%Y-%m")
 
 
-def evolucion(df, agrupacion="mes"):
+def evolucion(df, agrupacion="mes", desde=None, hasta=None):
     if agrupacion not in ["semana", "mes", "anio"]:
         agrupacion = "mes"
 
@@ -431,13 +383,19 @@ def evolucion(df, agrupacion="mes"):
         .fillna(terminados["fecha_cierre"])
         .fillna(terminados["fecha_fin"])
     )
-    terminados = terminados[
-        terminados["estado_grupo"].isin(["Cerrado", "Resuelto"])
-        & terminados["fecha_final"].notna()
-    ].copy()
+    terminados = terminados[terminados["estado_grupo"].isin(["Cerrado", "Resuelto"]) & terminados["fecha_final"].notna()].copy()
+    
     terminados["periodo"] = _etiqueta_periodo(terminados["fecha_final"], agrupacion)
     serie_finalizados = terminados.groupby("periodo").size()
-
+    if desde:
+            fecha_desde = pd.to_datatime(desde, errors="coerce")
+            if not pd.isna(fecha_desde):
+                terminados = terminados[terminados["fecha_inicio"] >= fecha_desde]
+    if hasta:
+        fecha_hasta = pd.to_datetime(hasta, errors="coerce")
+        if not pd.isna(fecha_hasta):
+            terminados = terminados[terminados["fecha_inicio"] < fecha_hasta + timedelta(days=1)]
+            
     periodos = sorted(set(serie_recibidos.index) | set(serie_finalizados.index))
     return [
         {

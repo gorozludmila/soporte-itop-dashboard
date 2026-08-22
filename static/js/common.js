@@ -1,11 +1,7 @@
 let graficos = {};
 let filtrosCache = null;
 
-
-// ============================================================
 // DESTRUIR GRÁFICOS
-// ============================================================
-
 function destruirGrafico(nombre) {
 
     if (graficos[nombre]) {
@@ -16,11 +12,7 @@ function destruirGrafico(nombre) {
     }
 }
 
-
-// ============================================================
 // PLUGIN - VALORES SOBRE LAS BARRAS
-// ============================================================
-
 const pluginValoresBarras = {
 
     id: "pluginValoresBarras",
@@ -520,7 +512,7 @@ function actualizarPersonas() {
     llenarSelect(
         "persona",
         filtrosCache.personas?.[
-            tipo.value
+        tipo.value
         ] || [],
         "Todas"
     );
@@ -565,8 +557,8 @@ function actualizarOrganismos() {
             ? (
                 filtrosCache
                     .organismos_por_ministerio?.[
-                        ministerio.value
-                    ] || []
+                ministerio.value
+                ] || []
             )
 
             : (
@@ -838,9 +830,9 @@ function setPeriodo(periodo) {
         );
 
 
-    // --------------------------------------------------------
-    // MES ACTUAL
-    // --------------------------------------------------------
+        // --------------------------------------------------------
+        // MES ACTUAL
+        // --------------------------------------------------------
 
     } else if (
         periodo === "mes"
@@ -854,9 +846,9 @@ function setPeriodo(periodo) {
             );
 
 
-    // --------------------------------------------------------
-    // AÑO ACTUAL
-    // --------------------------------------------------------
+        // --------------------------------------------------------
+        // AÑO ACTUAL
+        // --------------------------------------------------------
 
     } else if (
         periodo === "anio"

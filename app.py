@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 from exportacionitop import ejecutar
+from datetime import datetime
 from services.data_service import (
     cargar_tickets,
     aplicar_filtros,
@@ -92,69 +93,20 @@ def resumen_por_administrador(tickets):
             != ""
         ]
 
-        .groupby(
-            [
-                "reportado_por",
-                "ministerio",
-                "organismo"
-            ],
-            dropna=False
-        )
-
-        .agg(
-
-            incidentes=(
-                "tipo",
-                lambda x:
-                    int(
-                        (x == "Incidente").sum()
-                    )
-            ),
-
-            requerimientos=(
-                "tipo",
-                lambda x:
-                    int(
-                        (x == "Requerimiento").sum()
-                    )
-            ),
-
-            cantidad=(
-                "referencia",
-                "count"
-            )
-
-        )
-
+        .groupby( [  "reportado_por", "ministerio", "organismo" ],   dropna=False )
+        .agg(  incidentes=("tipo",  lambda x:  int(       (x == "Incidente").sum() )   ),
+        requerimientos=(   "tipo",  lambda x:   int(      (x == "Requerimiento").sum()) ), cantidad=( "referencia", "count" ))
         .reset_index()
-
-        .sort_values(
-            "cantidad",
-            ascending=False
-        )
-    )
+        .sort_values("cantidad",   ascending=False   ) )
 
 
-    return [
-
-        {
-            "nombre":
-                fila["reportado_por"],
-
-            "ministerio":
-                fila["ministerio"],
-
-            "organismo":
-                fila["organismo"],
-
-            "incidentes":
-                int(fila["incidentes"]),
-
-            "requerimientos":
-                int(fila["requerimientos"]),
-
-            "cantidad":
-                int(fila["cantidad"])
+    return [ {
+            "nombre":  fila["reportado_por"],
+            "ministerio": fila["ministerio"],
+            "organismo":  fila["organismo"],
+            "incidentes":  int(fila["incidentes"]),
+            "requerimientos": int(fila["requerimientos"]),
+            "cantidad": int(fila["cantidad"])
         }
 
         for _, fila
@@ -171,18 +123,10 @@ def resumen_por_administrador(tickets):
 def api_filtros():
 
     try:
-
-        return jsonify({
-            "ok": True,
-            "data": opciones_filtros()
-        })
+        return jsonify({ "ok": True,   "data": opciones_filtros()  })
 
     except Exception as error:
-
-        return jsonify({
-            "ok": False,
-            "error": str(error)
-        }), 500
+        return jsonify({ "ok": False, "error": str(error) }), 500
 
 
 # ============================================================
@@ -193,71 +137,16 @@ def api_filtros():
 def api_resumen():
 
     try:
+        tickets = aplicar_filtros( cargar_tickets(), **obtener_filtros()  )
+        filtros = obtener_filtros()
+        resumen = resumen_numerico(  tickets)
 
-        tickets = aplicar_filtros(
-            cargar_tickets(),
-            **obtener_filtros()
-        )
-
-
-        resumen = resumen_numerico(
-            tickets
-        )
-
-
-        # ----------------------------------------
-        # DISTRIBUCIONES
-        # ----------------------------------------
-
-        resumen["ministerios"] = contar_por(
-            tickets,
-            "ministerio",
-            12
-        )
-
-
-        resumen["organismos"] = contar_por(
-            tickets,
-            "organismo",
-            12
-        )
-
-
-        resumen["servicios"] = contar_por(
-            tickets,
-            "servicio",
-            12
-        )
-
-
-        resumen["estados"] = contar_por(
-            tickets,
-            "estado"
-        )
-
-
-        # ----------------------------------------
-        # EVOLUCIÓN
-        # ----------------------------------------
-
-        resumen["evolucion"] = evolucion(
-            tickets,
-            request.args.get(
-                "agrupacion",
-                "mes"
-            )
-        )
-
-
-        # ----------------------------------------
-        # TIEMPO DE RESOLUCIÓN
-        # ----------------------------------------
-
-        resumen["tiempo_promedio_horas"] = (
-            tiempo_promedio_horas(
-                tickets
-            )
-        )
+        resumen["ministerios"] = contar_por(tickets, "ministerio", 12 )
+        resumen["organismos"] = contar_por( tickets,  "organismo", 12 )
+        resumen["servicios"] = contar_por( tickets, "servicio", 12 )
+        resumen["estados"] = contar_por( tickets,"estado"  )
+        resumen["evolucion"] = evolucion( tickets, request.args.get("agrupacion", "mes"), filtros["desde"], filtros["hasta"])
+        resumen["tiempo_promedio_horas"] = ( tiempo_promedio_horas( tickets  ) )
 
 
         # ----------------------------------------
@@ -268,14 +157,7 @@ def api_resumen():
         # Después podemos sacar ese gráfico.
         # ----------------------------------------
 
-        resumen["origen"] = {
-
-            "administradores":
-                int(len(tickets)),
-
-            "otros":
-                0
-        }
+        resumen["origen"] = {            "administradores":  int(len(tickets)),  "otros":       0 }
 
 
         return jsonify({
@@ -320,91 +202,15 @@ def api_tickets():
             filtros["tipo"] = solo_tipo
 
 
-        tickets = aplicar_filtros(
-            cargar_tickets(),
-            **filtros
-        )
-
-
-        resumen = resumen_numerico(
-            tickets
-        )
-
-        resumen["evolucion"] = evolucion(
-    tickets,
-    request.args.get(
-        "agrupacion",
-        "mes"
-    )
-)
-
-
-
-        # ----------------------------------------
-        # MINISTERIOS
-        # ----------------------------------------
-
-        resumen["por_ministerio"] = contar_por(
-            tickets,
-            "ministerio",
-            15
-        )
-
-
-        # ----------------------------------------
-        # ORGANISMOS
-        # ----------------------------------------
-
-        resumen["por_organismo"] = contar_por(
-            tickets,
-            "organismo",
-            15
-        )
-
-
-        # ----------------------------------------
-        # SERVICIOS
-        # ----------------------------------------
-
-        resumen["por_servicio"] = contar_por(
-            tickets,
-            "servicio",
-            15
-        )
-
-
-        # ----------------------------------------
-        # ESTADOS
-        # ----------------------------------------
-
-        resumen["por_estado"] = contar_por(
-            tickets,
-            "estado"
-        )
-
-
-        # ----------------------------------------
-        # ADMINISTRADORES LOCALES
-        #
-        # reportado_por = Administrador Local
-        # ----------------------------------------
-
-        administradores = resumen_por_administrador(
-            tickets
-        )
-
-
+        tickets = aplicar_filtros(cargar_tickets(), **filtros)
+        resumen = resumen_numerico(tickets        )
+        resumen["evolucion"] = evolucion( tickets, request.args.get("agrupacion", "mes",  filtros["desde"], filtros["hasta"]))
+        resumen["por_ministerio"] = contar_por(  tickets,  "ministerio", 15 )
+        resumen["por_organismo"] = contar_por(tickets,   "organismo",  15)
+        resumen["por_servicio"] = contar_por(  tickets, "servicio",  15 )
+        resumen["por_estado"] = contar_por( tickets, "estado"  )
+        administradores = resumen_por_administrador( tickets)
         resumen["por_admin"] = administradores
-
-
-        # ----------------------------------------
-        # Compatibilidad temporal
-        #
-        # Si tu JS viejo todavía busca
-        # por_reportante, devolvemos el mismo dato.
-        #
-        # Después vamos a sacar ese gráfico del HTML.
-        # ----------------------------------------
 
         resumen["por_reportante"] = [
 
