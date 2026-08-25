@@ -388,7 +388,7 @@ def evolucion(df, agrupacion="mes", desde=None, hasta=None):
     terminados["periodo"] = _etiqueta_periodo(terminados["fecha_final"], agrupacion)
     serie_finalizados = terminados.groupby("periodo").size()
     if desde:
-            fecha_desde = pd.to_datatime(desde, errors="coerce")
+            fecha_desde = pd.to_datetime(desde, errors="coerce")
             if not pd.isna(fecha_desde):
                 terminados = terminados[terminados["fecha_inicio"] >= fecha_desde]
     if hasta:

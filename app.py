@@ -145,7 +145,12 @@ def api_resumen():
         resumen["organismos"] = contar_por( tickets,  "organismo", 12 )
         resumen["servicios"] = contar_por( tickets, "servicio", 12 )
         resumen["estados"] = contar_por( tickets,"estado"  )
-        resumen["evolucion"] = evolucion( tickets, request.args.get("agrupacion", "mes"), filtros["desde"], filtros["hasta"])
+        resumen["evolucion"] = evolucion(
+    tickets,
+    request.args.get("agrupacion", "mes"),
+    filtros["desde"],
+    filtros["hasta"]
+)
         resumen["tiempo_promedio_horas"] = ( tiempo_promedio_horas( tickets  ) )
 
 
@@ -204,7 +209,7 @@ def api_tickets():
 
         tickets = aplicar_filtros(cargar_tickets(), **filtros)
         resumen = resumen_numerico(tickets        )
-        resumen["evolucion"] = evolucion( tickets, request.args.get("agrupacion", "mes",  filtros["desde"], filtros["hasta"]))
+        resumen["evolucion"] = evolucion( tickets, request.args.get("agrupacion", "mes"),  filtros["desde"], filtros["hasta"])
         resumen["por_ministerio"] = contar_por(  tickets,  "ministerio", 15 )
         resumen["por_organismo"] = contar_por(tickets,   "organismo",  15)
         resumen["por_servicio"] = contar_por(  tickets, "servicio",  15 )
