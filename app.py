@@ -1,5 +1,5 @@
-from flask import Flask, render_template, jsonify, request
-from exportacionitop import ejecutar
+from flask import Flask, Response, render_template, jsonify, request, stream_with_context
+
 from datetime import datetime, timedelta
 from services.data_service import (
     cargar_tickets,
@@ -15,7 +15,13 @@ from services.data_service import (
 )
 
 
+from services.sync_service import sincronizar_todo
+from services.database import estado_sincronizacion, inicializar_bd
+
 app = Flask(__name__)
+
+# Crea la base/tablas si todavía no existen.
+inicializar_bd()
 
 
 # ============================================================
@@ -550,28 +556,73 @@ def api_administradores():
             "error": str(error)
         }), 500
 
-@app.route("/actualizar-datos", methods=["POST"])
-def actualizar_datos():
+# ============================================================
+# API ESTADO DE SINCRONIZACIÓN
+# ============================================================
+
+@app.route("/api/sincronizacion")
+def api_sincronizacion():
+
     try:
-        ejecutar()
+        estado = estado_sincronizacion()
 
-        ahora = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-
-        return {
+        return jsonify({
             "ok": True,
-            "mensaje": "Datos actualizados correctamente",
-            "fecha": ahora
-        }
+            "data": estado
+        })
 
     except Exception as error:
 
-        print("ERROR AL ACTUALIZAR DATOS:")
+        print("ERROR AL CONSULTAR ESTADO DE SINCRONIZACIÓN:")
         print(error)
 
-        return {
+        return jsonify({
+            "ok": False,
+            "error": str(error)
+        }), 500
+
+
+# ============================================================
+# ACTUALIZAR DATOS DESDE ITOP -> SQLITE
+# ============================================================
+
+@app.route("/actualizar-datos", methods=["POST"])
+def actualizar_datos():
+
+    try:
+        # Esta llamada consulta iTop y guarda altas/cambios en SQLite.
+        # El dashboard normal lee la base local.
+        resultado = sincronizar_todo()
+
+        estado = estado_sincronizacion()
+
+        ahora = datetime.now().strftime(
+            "%d/%m/%Y %H:%M:%S"
+        )
+
+        return jsonify({
+            "ok": True,
+            "mensaje": "Datos sincronizados desde iTop correctamente",
+            "fecha": ahora,
+            "tickets": estado["total_tickets"],
+            "recibidos": resultado["recibidos"],
+            "nuevos": resultado["nuevos"],
+            "actualizados": resultado["actualizados"],
+            "sin_cambios": resultado["sin_cambios"],
+            "detalle": resultado["detalle"]
+        })
+
+    except Exception as error:
+
+        print("ERROR AL SINCRONIZAR ITOP:")
+        print(error)
+
+        return jsonify({
             "ok": False,
             "mensaje": str(error)
-        }, 500
+        }), 500
+
+
 # ============================================================
 # SERVIDOR
 # ============================================================

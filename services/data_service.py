@@ -4,6 +4,7 @@ import os
 import re
 import unicodedata
 import pandas as pd
+from services.database import obtener_tickets
 
 # ARCHIVOS
 
@@ -13,13 +14,13 @@ EXTERNAL_DATA_DIR = Path( os.environ.get( "ITOP_DATA_DIR", "/home/usuario/Docume
 
 
 def _data_dir():
-    candidatos = [EXTERNAL_DATA_DIR, PROJECT_DATA_DIR]
+
+    candidatos = [EXTERNAL_DATA_DIR,   PROJECT_DATA_DIR]
     for carpeta in candidatos:
-        if (  (carpeta / "Incidente Exportar.csv").exists()
-            and (carpeta / "Requerimiento Exportar.csv").exists()
-            and (carpeta / "Jefe_de_Sectoriales_con_sus_Usuarios.csv").exists()
-        ):
+        if (   carpeta /"Jefe_de_Sectoriales_con_sus_Usuarios.csv").exists():
+
             return carpeta
+
     return PROJECT_DATA_DIR
 
 
@@ -139,61 +140,91 @@ def cargar_administradores():
     )
 
 # INCIDENTES / REQUERIMIENTOS
+def _dataframe_tickets_vacio():
+    return pd.DataFrame(columns=[
+        "referencia",
+        "tipo",
+        "asunto",
+        "organizacion",
+        "reportado_por",
+        "analista",
+        "servicio",
+        "estado",
+        "estado_operativo",
+        "fecha_inicio",
+        "fecha_asignacion",
+        "fecha_solucion",
+        "fecha_cierre",
+        "fecha_fin",
+        "fecha_real_solucion",
+    ])
+
+
+def _cargar_tickets_desde_bd(tipo=None):
+    datos = obtener_tickets(tipo=tipo)
+    df = pd.DataFrame(datos)
+
+    if df.empty:
+        return preparar_tickets(_dataframe_tickets_vacio())
+
+    columnas_texto = [
+        "referencia",
+        "tipo",
+        "asunto",
+        "organizacion",
+        "reportado_por",
+        "analista",
+        "servicio",
+        "estado",
+        "estado_operativo",
+    ]
+
+    for campo in columnas_texto:
+        if campo not in df.columns:
+            df[campo] = ""
+
+    columnas_fecha = [
+        "fecha_inicio",
+        "fecha_asignacion",
+        "fecha_solucion",
+        "fecha_cierre",
+        "fecha_fin",
+        "fecha_real_solucion",
+    ]
+
+    for campo in columnas_fecha:
+        if campo not in df.columns:
+            df[campo] = pd.NaT
+        else:
+            df[campo] = convertir_fecha(df[campo])
+
+    return preparar_tickets(df)
+
 
 def cargar_incidentes():
-    archivo, _, _ = rutas_archivos()
-    df = leer_csv(archivo)
-
-    tickets = pd.DataFrame({
-        "referencia": df["Incident.Ref"],
-        "tipo": "Incidente",
-        "asunto": df["Incident.Asunto"],
-        "organizacion": df["Incident.Organización->Nombre común"],
-        "reportado_por": df["Incident.Reportado por->Nombre común"],
-        "analista": df["Incident.Analista->Nombre común"],
-        "servicio": df["Service.Nombre"],
-        "estado": df["Incident.Estatus"],
-        "estado_operativo": df["Incident.Estatus Operativo"],
-        "fecha_inicio": convertir_fecha(df["Incident.Fecha de Inicio"]),
-        "fecha_asignacion": convertir_fecha(df["Incident.Fecha de Asignación"]),
-        "fecha_solucion": convertir_fecha(df["Incident.Fecha de Solución"]),
-        "fecha_cierre": convertir_fecha(df["Incident.Fecha de Cierre"]),
-        "fecha_fin": convertir_fecha(df["Incident.Fecha de Fin"]),
-        "fecha_real_solucion": convertir_fecha(df["Incident.Fecha Real de Solución"]),
-    })
-    return preparar_tickets(tickets)
+    return _cargar_tickets_desde_bd("Incidente")
 
 
 def cargar_requerimientos():
-    _, archivo, _ = rutas_archivos()
-    df = leer_csv(archivo)
-
-    tickets = pd.DataFrame({
-        "referencia": df["UserRequest.Ref"],
-        "tipo": "Requerimiento",
-        "asunto": df["UserRequest.Asunto"],
-        "organizacion": df["UserRequest.Organización->Nombre común"],
-        "reportado_por": df["UserRequest.Reportado por->Nombre común"],
-        "analista": df["UserRequest.Analista->Nombre común"],
-        "servicio": df["Service.Nombre"],
-        "estado": df["UserRequest.Estatus"],
-        "estado_operativo": df["UserRequest.Estatus Operativo"],
-        "fecha_inicio": convertir_fecha(df["UserRequest.Fecha de Inicio"]),
-        "fecha_asignacion": convertir_fecha(df["UserRequest.Fecha de Asignación"]),
-        "fecha_solucion": convertir_fecha(df["UserRequest.Fecha de Solución"]),
-        "fecha_cierre": convertir_fecha(df["UserRequest.Fecha de Cierre"]),
-        "fecha_fin": convertir_fecha(df["UserRequest.Fecha de Fin"]),
-        "fecha_real_solucion": convertir_fecha(df["UserRequest.Fecha Real de Solución"]),
-    })
-    return preparar_tickets(tickets)
+    return _cargar_tickets_desde_bd("Requerimiento")
 
 
 def preparar_tickets(df):
     df = df.copy()
     df = df.drop_duplicates(subset=["referencia"], keep="last")
 
-    for campo in [ "referencia", "asunto", "organizacion", "reportado_por",  "analista", "servicio", "estado", "estado_operativo"]:
+    for campo in [
+        "referencia",
+        "asunto",
+        "organizacion",
+        "reportado_por",
+        "analista",
+        "servicio",
+        "estado",
+        "estado_operativo",
+    ]:
         _texto_columna(df, campo)
+
     df["ministerio"] = df["organizacion"].apply(obtener_ministerio)
     df["organismo"] = df["organizacion"]
     df["reportado_key"] = df["reportado_por"].apply(clave_nombre)
@@ -201,16 +232,16 @@ def preparar_tickets(df):
     estado_normalizado = df["estado"].apply(normalizar_texto)
     df["estado_grupo"] = "Abierto"
     df.loc[estado_normalizado == "cerrado", "estado_grupo"] = "Cerrado"
-    df.loc[estado_normalizado.isin(["solucionado", "resuelto"]), "estado_grupo"] = "Resuelto"
+    df.loc[
+        estado_normalizado.isin(["solucionado", "resuelto"]),
+        "estado_grupo"
+    ] = "Resuelto"
 
     return df
 
 
 def cargar_tickets():
-    tickets = pd.concat(
-        [cargar_incidentes(), cargar_requerimientos()],
-        ignore_index=True
-    )
+    tickets = _cargar_tickets_desde_bd()
     return identificar_administradores(tickets)
 
 

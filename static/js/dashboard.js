@@ -4,26 +4,58 @@ const actualizarMeta = document.getElementById("actualizarMeta");
 const actualizarIcono = document.getElementById("actualizarIcono");
 
 
-if (btnActualizarDatos) {
-
-    // Recuperar última actualización guardada
-    const ultimaActualizacion = localStorage.getItem("ultimaActualizacionItop");
-
-    if (ultimaActualizacion) {
-        actualizarMeta.textContent =
-            `Última actualización: ${ultimaActualizacion}`;
+function formatearFechaServidor(valor) {
+    if (!valor) {
+        return "Sin sincronizar";
     }
 
+    const partes = valor.split(" ");
+    const fecha = partes[0]?.split("-");
+    const hora = partes[1] || "";
 
+    if (!fecha || fecha.length !== 3) {
+        return valor;
+    }
+
+    return `${fecha[2]}/${fecha[1]}/${fecha[0]} ${hora}`.trim();
+}
+
+
+async function cargarEstadoSincronizacion() {
+    if (!actualizarMeta) {
+        return;
+    }
+
+    try {
+        const respuesta = await fetch("/api/sincronizacion");
+        const datos = await respuesta.json();
+
+        if (!respuesta.ok || !datos.ok) {
+            throw new Error(datos.error || "No se pudo consultar la sincronización");
+        }
+
+        const ultima = datos.data?.ultima_sincronizacion;
+        const total = datos.data?.total_tickets ?? 0;
+
+        actualizarMeta.textContent = ultima
+            ? `Última actualización: ${formatearFechaServidor(ultima)} · ${total} tickets en SQLite`
+            : "Base local todavía sin sincronizar";
+
+    } catch (error) {
+        console.error(error);
+        actualizarMeta.textContent = "No se pudo consultar la última actualización";
+    }
+}
+
+
+if (btnActualizarDatos) {
     btnActualizarDatos.addEventListener("click", async () => {
-
         try {
-
-            // Evitar múltiples clicks
             btnActualizarDatos.disabled = true;
 
-            actualizarIcono.textContent = "⟳";
-            actualizarTexto.textContent = "Actualizando datos...";
+            if (actualizarIcono) actualizarIcono.textContent = "⟳";
+            if (actualizarTexto) actualizarTexto.textContent = "Actualizando...";
+            if (actualizarMeta) actualizarMeta.textContent = "Consultando cambios en iTop...";
 
             const respuesta = await fetch("/actualizar-datos", {
                 method: "POST"
@@ -31,52 +63,39 @@ if (btnActualizarDatos) {
 
             const datos = await respuesta.json();
 
-
             if (!respuesta.ok || !datos.ok) {
                 throw new Error(
                     datos.mensaje || "No se pudieron actualizar los datos"
                 );
             }
 
+            if (actualizarTexto) actualizarTexto.textContent = "Actualizar datos";
 
-            actualizarTexto.textContent = "Datos actualizados";
+            if (actualizarMeta) {
+                actualizarMeta.textContent =
+                    `Última actualización: ${datos.fecha} · ` +
+                    `${datos.nuevos} nuevos · ${datos.actualizados} actualizados`;
+            }
 
-            actualizarMeta.textContent =
-                `Última actualización: ${datos.fecha}`;
-
-
-            // Guardamos la fecha para que no desaparezca al recargar
-            localStorage.setItem(
-                "ultimaActualizacionItop",
-                datos.fecha
-            );
-
-
-            // Esperamos un instante y recargamos el dashboard
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-
+            await cargarFiltros();
+            await cargarDashboard();
 
         } catch (error) {
-
             console.error(error);
 
-            actualizarTexto.textContent = "Error al actualizar";
+            if (actualizarTexto) actualizarTexto.textContent = "Actualizar datos";
+            if (actualizarMeta) actualizarMeta.textContent = "Error al actualizar desde iTop";
 
             alert(
-                "No se pudieron actualizar los datos desde iTop.\n\n" 
+                "No se pudieron actualizar los datos desde iTop.\n\n" +
+                error.message
             );
 
-
         } finally {
-
+            if (actualizarIcono) actualizarIcono.textContent = "↻";
             btnActualizarDatos.disabled = false;
-
         }
-
     });
-
 }
 
 
@@ -416,6 +435,8 @@ document.addEventListener(
             await cargarFiltros();
 
             await cargarDashboard();
+
+            await cargarEstadoSincronizacion();
 
         } catch (e) {
 

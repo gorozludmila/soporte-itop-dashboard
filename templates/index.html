@@ -35,28 +35,14 @@
         <p>Situación operativa de incidentes y requerimientos registrados en iTop.</p>
     </div>
 
-    <div class="header-actions">
-
-        <div class="actualizar-datos">
-            <button
-                class="btn btn-primary"
-                id="btnActualizarDatos"
-                type="button">
-                <span id="actualizarIcono">⟳</span>
-                <span id="actualizarTexto">Actualizar datos desde iTop</span>
-            </button>
-
-            <span class="ultima-actualizacion" id="actualizarMeta">
-                Última actualización: —
-            </span>
-        </div>
-
-        <div id="estadoConexion" class="status-pill">
-            <span class="status-dot"></span>
-            Cargando datos...
-        </div>
-
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+        <button class="btn btn-primary" id="btnActualizarDatos" type="button">
+            <span id="actualizarIcono">↻</span>
+            <span id="actualizarTexto">Actualizar datos</span>
+        </button>
+        <small id="actualizarMeta" style="color:#6b7280;">Base local todavía sin sincronizar</small>
     </div>
+
 </section>
 
 
